@@ -1,29 +1,34 @@
-from pathlib import Path
-
-from loguru import logger
-from tqdm import tqdm
-import typer
-
-from src.config import FIGURES_DIR, PROCESSED_DATA_DIR
-
-app = typer.Typer()
+import matplotlib.pyplot as plt
+import numpy as np
 
 
-@app.command()
-def main(
-    # ---- REPLACE DEFAULT PATHS AS APPROPRIATE ----
-    input_path: Path = PROCESSED_DATA_DIR / "dataset.csv",
-    output_path: Path = FIGURES_DIR / "plot.png",
-    # -----------------------------------------
-):
-    # ---- REPLACE THIS WITH YOUR OWN CODE ----
-    logger.info("Generating plot from data...")
-    for i in tqdm(range(10), total=10):
-        if i == 5:
-            logger.info("Something happened for iteration 5.")
-    logger.success("Plot generation complete.")
-    # -----------------------------------------
+def display_image(img: np.ndarray) -> None:
+    """Display an image using Matplotlib.
+
+    Args:
+        img (np.ndarray): Image array to display.
+    """
+    plt.imshow(img, cmap="gray" if img.ndim == 2 else None)
+    plt.show()
 
 
-if __name__ == "__main__":
-    app()
+def display_histogram(hist: np.ndarray, bins: np.ndarray) -> None:
+    """Display a histogram as a bar plot.
+
+    Args:
+        hist (np.ndarray): Histogram values.
+        bins (np.ndarray): Bin edges.
+
+    Raises:
+        ValueError: If histogram and bin lengths are incompatible.
+    """
+    # bin edges -> remove last edge to have one bin for each value
+    if len(hist) == len(bins)-1:
+        bins = bins[:-1]
+    elif len(hist) != len(bins):
+        raise ValueError(
+            f"Histogram length ({len(hist)}) does not match bins length ({len(bins)})"
+        )
+
+    plt.bar(bins, hist)
+    plt.show()

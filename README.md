@@ -42,6 +42,9 @@ A short description of the project.
     │
     ├── config.py               <- Store useful variables and configuration
     │
+    ├── data                    <- Scripts to extract/load data
+    │   └──extract.py
+    │
     ├── descriptors             <- Scripts to compute image descriptors
     │   ├──descriptor_1.py
     │   └──descriptor_n.py
