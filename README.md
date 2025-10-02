@@ -42,14 +42,21 @@ A short description of the project.
     │
     ├── config.py               <- Store useful variables and configuration
     │
-    ├── data
-    │   ├──dataset.py              <- Scripts to download or generate data
-    │   └──features.py             <- Code to create features for modeling
+    ├── descriptors             <- Scripts to compute image descriptors
+    │   ├──descriptor_1.py
+    │   └──descriptor_n.py
     │
-    ├── modeling                
-    │   ├── __init__.py 
-    │   ├── predict.py             <- Code to run model inference with trained models          
-    │   └── train.py               <- Code to train models
+    ├── similarities            <- Scripts to compute similarity measures                
+    │   ├── measure_1.py
+    │   └── measure_n.py
+    │
+    ├── metrics                 <- Scripts to compute metrics
+    │   ├── metric_1.py
+    │   └── metric_n.py
+    │
+    ├── models                  <- Scripts to compute image retrieval and generate deliverables
+    │   ├── method_1.py
+    │   └── method_n.py
     │
     ├── tools                   <- Helper functions 
     │   └── startup.py             <- Load parameters from yaml configuration file
