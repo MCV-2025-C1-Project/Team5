@@ -1,5 +1,5 @@
 import numpy as np
-from gray_level_histogram import compute_histogram
+from .gray_level_histogram import compute_histogram
 
 def compute_rgb_histogram(img: np.ndarray, density: bool = True) -> tuple[np.ndarray, np.ndarray]:
     """
