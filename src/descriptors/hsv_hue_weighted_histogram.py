@@ -20,7 +20,7 @@ def convert_img_to_hsv(img_bgr: np.ndarray) -> np.ndarray:
 def compute_histogram(img: np.ndarray,
                       bins: int = 72,
                       s_min: float = 0.10,
-                      density: bool = True) -> tuple[np.ndarray, np.ndarray]:
+                      normalize: bool = True) -> tuple[np.ndarray, np.ndarray]:
     """
     Compute a 1-D histogram of the Hue channel in an HSV image,
     weighted by Saturation so that strongly coloured pixels have more influence.
@@ -33,9 +33,8 @@ def compute_histogram(img: np.ndarray,
         Number of histogram bins for Hue (OpenCV Hue values are 0..180).
     s_min : float, optional
         Minimum saturation threshold (0..1). Pixels below this threshold are ignored.
-    density : bool, optional
-        If True, normalize the histogram so that the area under it integrates to 1.  
-        If False, return raw weighted counts. Defaults to True.
+    normalize : bool, optional
+        If True, divide by sum so the histogram sums to 1.
 
     Returns
     -------
@@ -61,7 +60,11 @@ def compute_histogram(img: np.ndarray,
         bins=bins,
         range=(0, 180),
         weights=weights,
-        density=density
     )
+
+    # If normalize=True and the histogram is non-empty,
+    # divide by its sum so that it adds up to 1 (L1 normalization)
+    if normalize and hist.sum() > 0:
+        hist = hist / hist.sum()
 
     return hist.astype(np.float32), bin_edges.astype(np.float32)
