@@ -32,3 +32,35 @@ def display_histogram(hist: np.ndarray, bins: np.ndarray) -> None:
 
     plt.bar(bins, hist)
     plt.show()
+
+def display_rgb_histogram(hist_concat: np.ndarray, bin_edges: np.ndarray) -> None:
+    """Display concatenated RGB histogram as a bar plot, superposing the three channels.
+
+    Args:
+        hist_concat (np.ndarray): Concatenated histogram values for R, G, B channels (length 3*N).
+        bin_edges (np.ndarray): Bin edges for a single channel (length N+1 for N bins).
+
+    Raises:
+        ValueError: If histogram and bin_edges lengths are incompatible.
+    """
+    n_bins = len(bin_edges) - 1
+    if hist_concat.shape[0] != 3 * n_bins:
+        raise ValueError(
+            f"Expected concatenated histogram of length {3 * n_bins}, got {hist_concat.shape[0]}"
+        )
+
+    bins = bin_edges[:-1]  # Use left edges for bar positions
+
+    fig, ax = plt.subplots(figsize=(8, 4))
+
+    # Plot each channel's histogram superposed
+    ax.bar(bins, hist_concat[:n_bins], color='r', width=np.diff(bin_edges), label='Red', alpha=0.5)
+    ax.bar(bins, hist_concat[n_bins:2 * n_bins], color='g', width=np.diff(bin_edges), label='Green', alpha=0.5)
+    ax.bar(bins, hist_concat[2 * n_bins:], color='b', width=np.diff(bin_edges), label='Blue', alpha=0.5)
+
+    ax.set_xlabel("Bin")
+    ax.set_ylabel("Frequency")
+    ax.set_title("RGB Histogram (superposed channels)")
+    ax.legend()
+    plt.tight_layout()
+    plt.show()
