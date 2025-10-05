@@ -2,6 +2,8 @@ import argparse
 from pathlib import Path
 from viz import generate_comprehensive_analysis
 
+from src.tools.startup import logger
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -42,7 +44,7 @@ def main():
     parser.add_argument(
         '--output_dir',
         type=str,
-        default='results',
+        default='data/results',
         help='Directory to save results'
     )
 
@@ -68,10 +70,10 @@ def main():
         nargs='+',
         default=None,
         choices=['euclidean.euclidean_distance', 'l1.compute_l1_distance', 'chi_2.compute_chi_2_distance',
-                'histogram_intersection.compute_histogram_intersection', 'hellinger.hellinger_kernel',
-                'cosine.compute_cosine_similarity', 'canberra.canberra_distance',
-                'bhattacharyya.bhattacharyya_distance', 'jensen_shannon.jeffrey_divergence',
-                'correlation.correlation_distance'],
+                 'histogram_intersection.compute_histogram_intersection', 'hellinger.hellinger_kernel',
+                 'cosine.compute_cosine_similarity', 'canberra.canberra_distance',
+                 'bhattacharyya.bhattacharyya_distance', 'jensen_shannon.jeffrey_divergence',
+                 'correlation.correlation_distance'],
         help='Specific distance metrics to evaluate (default: all). Multiple allowed.'
     )
 
@@ -85,37 +87,39 @@ def main():
     if not query_path.exists():
         raise FileNotFoundError(f"Query directory not found: {args.query_dir}")
     if not museum_path.exists():
-        raise FileNotFoundError(f"Museum directory not found: {args.museum_dir}")
+        raise FileNotFoundError(
+            f"Museum directory not found: {args.museum_dir}")
     if not gt_path.exists():
-        raise FileNotFoundError(f"Ground truth file not found: {args.ground_truth}")
+        raise FileNotFoundError(
+            f"Ground truth file not found: {args.ground_truth}")
 
-    print("=" * 80)
-    print("IMAGE RETRIEVAL SYSTEM - COMPREHENSIVE ANALYSIS")
-    print("=" * 80)
-    print(f"Query Directory:     {args.query_dir}")
-    print(f"Museum Directory:    {args.museum_dir}")
-    print(f"Ground Truth:        {args.ground_truth}")
-    print(f"Values per bin:      {args.values_per_bin}")
-    print(f"Output Directory:    {args.output_dir}")
-    print(f"Top-k:               {args.k}")
+    logger.info("=" * 80)
+    logger.info("IMAGE RETRIEVAL SYSTEM - COMPREHENSIVE ANALYSIS")
+    logger.info("=" * 80)
+    logger.info(f"Query Directory:     {args.query_dir}")
+    logger.info(f"Museum Directory:    {args.museum_dir}")
+    logger.info(f"Ground Truth:        {args.ground_truth}")
+    logger.info(f"Values per bin:      {args.values_per_bin}")
+    logger.info(f"Output Directory:    {args.output_dir}")
+    logger.info(f"Top-k:               {args.k}")
 
     if args.descriptors:
-        print(f"Descriptors:         {', '.join(args.descriptors)}")
+        logger.info(f"Descriptors:         {', '.join(args.descriptors)}")
     else:
-        print(f"Descriptors:         All (rgb, hsv, ycbcr, lab, grayscale)")
+        logger.info(
+            f"Descriptors:         All (rgb, hsv, ycbcr, lab, grayscale)")
 
     if args.distances:
-        print(f"Distance Metrics:    {len(args.distances)} selected")
+        logger.info(f"Distance Metrics:    {len(args.distances)} selected")
     else:
-        print(f"Distance Metrics:    All (10 metrics)")
+        logger.info(f"Distance Metrics:    All (10 metrics)")
 
     # Calculate total combinations
     num_descriptors = len(args.descriptors) if args.descriptors else 5
     num_distances = len(args.distances) if args.distances else 10
     total_combinations = num_descriptors * num_distances
-    print(f"Total Combinations:  {total_combinations}")
-    print("=" * 80)
-    print()
+    logger.info(f"Total Combinations:  {total_combinations}")
+    logger.info("=" * 80)
 
     # Run comprehensive analysis
     all_results, best_desc, best_dist, best_score, result_list = generate_comprehensive_analysis(
@@ -129,11 +133,11 @@ def main():
         distance_metrics=args.distances
     )
 
-    print()
-    print(f"Best Descriptor: {best_desc}")
-    print(f"Best Distance:   {best_dist}")
-    print(f"Best mAP@5:      {best_score:.4f}")
-    print(f"Results saved to: {args.output_dir}")
+    logger.info(f"Best Descriptor: {best_desc}")
+    logger.info(f"Best Distance:   {best_dist}")
+    logger.info(f"Best mAP@5:      {best_score:.4f}")
+    logger.info(f"Results saved to: {args.output_dir}")
+
 
 if __name__ == "__main__":
     main()

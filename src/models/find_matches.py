@@ -14,6 +14,8 @@ from src.distances.hellinger import compute_hellinger_distance
 from src.distances.euclidean import compute_euclidean_distance
 from src.distances.cosine import compute_cosine_distance
 
+from src.tools.startup import logger
+
 # ---------------------------------------------------------------------------
 # Map from metric name -> corresponding distance/similarity function
 # ---------------------------------------------------------------------------
@@ -33,6 +35,7 @@ METRICS = {
 # ---------------------------------------------------------------------------
 # Utility functions
 # ---------------------------------------------------------------------------
+
 
 def load_descriptors(pkl_path):
     """
@@ -78,7 +81,7 @@ def find_top_k_matches(query_descs, db_descs, db_ids, metric_func, k=10):
         List of top-K matching IDs for each query descriptor.
     """
     top_k_ids = []
-    print(f"Computing distances using '{metric_func.__name__}'...")
+    logger.info(f"Computing distances using '{metric_func.__name__}'...")
     db_ids_array = np.array(db_ids)
 
     for q in query_descs:
@@ -90,6 +93,7 @@ def find_top_k_matches(query_descs, db_descs, db_ids, metric_func, k=10):
         top_k_ids.append(list(db_ids_array[top_k_indices]))
 
     return top_k_ids
+
 
 def convert_ids_to_int(top_matches):
     """
@@ -120,6 +124,7 @@ def convert_ids_to_int(top_matches):
 # Main script
 # ---------------------------------------------------------------------------
 
+
 def main():
     parser = argparse.ArgumentParser(
         description="Find top-K database matches for query image descriptors."
@@ -132,32 +137,34 @@ def main():
                         help="Distance/similarity metric to use.")
     parser.add_argument("--k", type=int, default=10,
                         help="Number of top matches to return per query.")
-    parser.add_argument("--outdir", default="results/week1",
+    parser.add_argument("--outdir", default="data/results/week1",
                         help="Base output directory for saving results.")
     args = parser.parse_args()
 
     # --------------------------------------------------------------
     # Load query and database descriptors
     # --------------------------------------------------------------
-    print(f"Loading query descriptors from {args.query_pkl}")
+    logger.info(f"Loading query descriptors from {args.query_pkl}")
     query_descs, query_ids = load_descriptors(args.query_pkl)
 
-    print(f"Loading database descriptors from {args.db_pkl}")
+    logger.info(f"Loading database descriptors from {args.db_pkl}")
     db_descs, db_ids = load_descriptors(args.db_pkl)
 
     # --------------------------------------------------------------
     # Compute top-K matches using the selected metric
     # --------------------------------------------------------------
     metric_function = METRICS[args.metric]
-    top_matches = find_top_k_matches(query_descs, db_descs, db_ids, metric_function, args.k)
-    
+    top_matches = find_top_k_matches(
+        query_descs, db_descs, db_ids, metric_function, args.k)
+
     # Convert image IDs to integer form
     top_matches = convert_ids_to_int(top_matches)
 
     # --------------------------------------------------------------
     # Build output path dynamically from query file name
     # --------------------------------------------------------------
-    descriptor_name = pickle.load(open(args.query_pkl, 'rb'))['descriptor_name']
+    descriptor_name = pickle.load(open(args.query_pkl, 'rb'))[
+        'descriptor_name']
     method_name = f"{descriptor_name}_{args.metric}"
 
     # Extract the base name of the query pickle (e.g., "QSD1_descriptors.pkl" → "QSD1_descriptors")
@@ -175,10 +182,12 @@ def main():
     # --------------------------------------------------------------
     with open(output_file, 'wb') as f:
         pickle.dump(top_matches, f)
-        
-    print(f"\n[OK] Saved {len(top_matches)} query results to: {output_file}")
-    print("Example result for the first query:")
-    print(top_matches[0])
+
+    logger.info(
+        f"\n[OK] Saved {len(top_matches)} query results to: {output_file}")
+    logger.info("Example result for the first query:")
+    logger.info(top_matches[0])
+
 
 if __name__ == "__main__":
     main()

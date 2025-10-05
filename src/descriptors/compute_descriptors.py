@@ -12,6 +12,8 @@ from src.descriptors.lab import compute_lab_histogram
 from src.descriptors.rgb import compute_rgb_histogram
 from src.descriptors.ycbcr import compute_ycbcr_histogram
 
+from src.tools.startup import logger
+
 # Map a short name -> (callable, default params)
 DESCRIPTORS = {
     "grayscale": (compute_grayscale_histogram, {"values_per_bin": 1}),
@@ -55,13 +57,13 @@ def compute_for_folder(folder: str, func, **kwargs):
         List of image IDs (integers if filenames are numeric, otherwise strings)
         corresponding to each row of `descs`.
     """
-    paths = list_images(folder) # get all image file paths (.jpg/.jpeg)
+    paths = list_images(folder)  # get all image file paths (.jpg/.jpeg)
     descs, ids = [], []
 
     for p in paths:
 
         hist, _ = func(p, **kwargs)
-        descs.append(hist.astype(np.float32)) # store descriptor as float32
+        descs.append(hist.astype(np.float32))  # store descriptor as float32
 
         # extract the filename without extension to use as image ID
         stem = os.path.splitext(os.path.basename(p))[0]
@@ -69,7 +71,7 @@ def compute_for_folder(folder: str, func, **kwargs):
             # convert to int if possible (e.g. "00023" -> 23)
             ids.append(int(stem))
         except ValueError:
-            ids.append(stem) # otherwise keep as string
+            ids.append(stem)  # otherwise keep as string
 
     # stack all descriptors into a single 2-D array [n_images, descriptor_dim]
     return np.vstack(descs), ids
@@ -86,13 +88,17 @@ def main():
     ap.add_argument("--outdir", default="data/descriptors",
                     help="Output folder")
     # optional overrides
-    ap.add_argument("--values_per_bin", type=int, default=None, help="Intensity values per bin")
+    ap.add_argument("--values_per_bin", type=int, default=None,
+                    help="Intensity values per bin")
     args = ap.parse_args()
 
     func, defaults = DESCRIPTORS[args.descriptor]
     params = defaults.copy()
     if args.values_per_bin is not None:
         params["values_per_bin"] = args.values_per_bin
+
+    logger.info(f"Beginning computation of descriptor '{args.descriptor}' to data in folder '{args.input}'."
+                f" Values per bin: {params['values_per_bin']}")
 
     os.makedirs(args.outdir, exist_ok=True)
 
@@ -115,7 +121,8 @@ def main():
     with open(out_file, "wb") as f:
         pickle.dump(data_to_save, f)
 
-    print(f"[OK] Saved {H.shape} descriptors to {out_file}")
+    logger.info(
+        f"Execution completed! Saved {H.shape} descriptors to {out_file}")
 
 
 if __name__ == "__main__":
