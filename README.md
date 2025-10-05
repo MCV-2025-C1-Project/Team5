@@ -150,13 +150,14 @@ The descriptor computator module automates the extraction of global color descri
 
 #### To execute automatically
 
-#TODO makefile
-
-If has been configured a Make command with the best hyperparameters set to simplify the computation of the descriptors. Just by executing:
+For convenience, the project includes a **Makefile** that automates the execution of the main stages of the pipeline.  
+You can simply run:
 
 ```bash
 make descriptors
 ```
+
+This command computes all descriptors in the HSV and LAB color spaces with a bin size of 5, which are the best configuration found during experimentation, for both the Museum and Query datasets.  
 
 #### To execute manually
 
@@ -241,6 +242,19 @@ The retrieval system supports multiple distance and similarity metrics, allowing
 
 
 
+#### To execute automatically
+
+Once the descriptors are created, you can run the **retrieval stage** to find the most visually similar paintings between the **query** and **museum** datasets.
+
+You can execute all retrieval experiments automatically using:
+
+```bash
+make find_matching
+```
+
+#### To execute manually
+
+
 **Example command**
 
 ```bash
@@ -286,9 +300,11 @@ A .pkl file storing, for each query image, the list of top-K most similar databa
 ```
 
 
-### Evaluate descriptors and distances
+### 3. Evaluate descriptors and distances
 
-`python -m src.models.run --query_dir data/raw/qsd1_w1 --museum_dir data/raw/BBDD --ground_truth data/raw/qsd1_w1/gt_corresps.pkl --values_per_bin 5 --output_dir results --k 5 --descriptors hsv --distances canberra.canberra_distance`
+```bash
+python -m src.models.run --query_dir data/raw/qsd1_w1 --museum_dir data/raw/BBDD --ground_truth data/raw/qsd1_w1/gt_corresps.pkl --values_per_bin 5 --output_dir results --k 5 --descriptors hsv --distances canberra.canberra_distance
+```
 
 #### Hyperparameters
 

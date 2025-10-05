@@ -184,7 +184,7 @@ def main():
         pickle.dump(top_matches, f)
 
     logger.info(
-        f"\n[OK] Saved {len(top_matches)} query results to: {output_file}")
+        f"Execution completed! Saved {len(top_matches)} query results to: {output_file}")
     logger.info("Example result for the first query:")
     logger.info(top_matches[0])
 

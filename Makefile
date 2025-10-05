@@ -1,82 +1,85 @@
-#################################################################################
-# GLOBALS                                                                       #
-#################################################################################
+# ============================================================
+# Makefile for CBIR Project
+# ============================================================
 
-PROJECT_NAME = Team5
-PYTHON_VERSION = 3.10
-PYTHON_INTERPRETER = python
+PYTHON := python
+OUTDIR := data/descriptors
+RESULTS := results
+VALUES_PER_BIN := 5
+METRIC := canberra
+K := 10
 
-#################################################################################
-# COMMANDS                                                                      #
-#################################################################################
+# ------------------------------------------------------------
+# Descriptor Computation
+# ------------------------------------------------------------
+.PHONY: descriptors
+descriptors:
+	@echo "Computing HSV descriptors for BBDD..."
+	@$(PYTHON) -m src.descriptors.compute_descriptors \
+		--descriptor hsv \
+		--input data/raw/BBDD \
+		--outdir $(OUTDIR) \
+		--values_per_bin $(VALUES_PER_BIN)
 
+	@echo "\nComputing LAB descriptors for BBDD..."
+	@$(PYTHON) -m src.descriptors.compute_descriptors \
+		--descriptor lab \
+		--input data/raw/BBDD \
+		--outdir $(OUTDIR) \
+		--values_per_bin $(VALUES_PER_BIN)
 
-## Install Python dependencies
-.PHONY: requirements
-requirements:
-	$(PYTHON_INTERPRETER) -m pip install -U pip
-	$(PYTHON_INTERPRETER) -m pip install -r requirements.txt
-	
+	@echo "\nComputing HSV descriptors for QSD1..."
+	@$(PYTHON) -m src.descriptors.compute_descriptors \
+		--descriptor hsv \
+		--input data/raw/qsd1_w1 \
+		--outdir $(OUTDIR) \
+		--values_per_bin $(VALUES_PER_BIN)
 
+	@echo "\nComputing LAB descriptors for QSD1..."
+	@$(PYTHON) -m src.descriptors.compute_descriptors \
+		--descriptor lab \
+		--input data/raw/qsd1_w1 \
+		--outdir $(OUTDIR) \
+		--values_per_bin $(VALUES_PER_BIN)
 
+	@echo "\nComputing HSV descriptors for QST1..."
+	@$(PYTHON) -m src.descriptors.compute_descriptors \
+		--descriptor hsv \
+		--input data/raw/qst1_w1 \
+		--outdir $(OUTDIR) \
+		--values_per_bin $(VALUES_PER_BIN)
 
-## Delete all compiled Python files
-.PHONY: clean
-clean:
-	find . -type f -name "*.py[co]" -delete
-	find . -type d -name "__pycache__" -delete
+	@echo "\nComputing LAB descriptors for QST1..."
+	@$(PYTHON) -m src.descriptors.compute_descriptors \
+		--descriptor lab \
+		--input data/raw/qst1_w1 \
+		--outdir $(OUTDIR) \
+		--values_per_bin $(VALUES_PER_BIN)
 
+	@echo "\n✅ Descriptor computation completed successfully!"
 
-## Lint using ruff (use `make format` to do formatting)
-.PHONY: lint
-lint:
-	ruff format --check
-	ruff check
+# ------------------------------------------------------------
+# Find Matching (Retrieval)
+# ------------------------------------------------------------
+.PHONY: find_matching
+find_matching:
+	@echo "Running retrieval for HSV (QSD1)..."
+	@$(PYTHON) -m src.models.find_matches data/descriptors/qsd1_w1_hsv_vpb5.pkl data/descriptors/BBDD_hsv_vpb5.pkl --metric $(METRIC) --k $(K) --outdir $(RESULTS)
 
-## Format source code with ruff
-.PHONY: format
-format:
-	ruff check --fix
-	ruff format
+	@echo "\nRunning retrieval for HSV (QST1)..."
+	@$(PYTHON) -m src.models.find_matches data/descriptors/qst1_w1_hsv_vpb5.pkl data/descriptors/BBDD_hsv_vpb5.pkl --metric $(METRIC) --k $(K) --outdir $(RESULTS)
 
+	@echo "\nRunning retrieval for LAB (QSD1)..."
+	@$(PYTHON) -m src.models.find_matches data/descriptors/qsd1_w1_lab_vpb5.pkl data/descriptors/BBDD_lab_vpb5.pkl --metric $(METRIC) --k $(K) --outdir $(RESULTS)
 
+	@echo "\nRunning retrieval for LAB (QST1)..."
+	@$(PYTHON) -m src.models.find_matches data/descriptors/qst1_w1_lab_vpb5.pkl data/descriptors/BBDD_lab_vpb5.pkl --metric $(METRIC) --k $(K) --outdir $(RESULTS)
 
+	@echo "\n✅ All retrieval processes completed successfully!"
 
-
-## Set up Python interpreter environment
-.PHONY: create_environment
-create_environment:
-	@bash -c "if [ ! -z `which virtualenvwrapper.sh` ]; then source `which virtualenvwrapper.sh`; mkvirtualenv $(PROJECT_NAME) --python=$(PYTHON_INTERPRETER); else mkvirtualenv.bat $(PROJECT_NAME) --python=$(PYTHON_INTERPRETER); fi"
-	@echo ">>> New virtualenv created. Activate with:\nworkon $(PROJECT_NAME)"
-	
-
-
-
-#################################################################################
-# PROJECT RULES                                                                 #
-#################################################################################
-
-
-## Make dataset
-.PHONY: data
-data: requirements
-	$(PYTHON_INTERPRETER) src/data/dataset.py
-
-
-#################################################################################
-# Self Documenting Commands                                                     #
-#################################################################################
-
-.DEFAULT_GOAL := help
-
-define PRINT_HELP_PYSCRIPT
-import re, sys; \
-lines = '\n'.join([line for line in sys.stdin]); \
-matches = re.findall(r'\n## (.*)\n[\s\S]+?\n([a-zA-Z_-]+):', lines); \
-print('Available rules:\n'); \
-print('\n'.join(['{:25}{}'.format(*reversed(match)) for match in matches]))
-endef
-export PRINT_HELP_PYSCRIPT
-
-help:
-	@$(PYTHON_INTERPRETER) -c "${PRINT_HELP_PYSCRIPT}" < $(MAKEFILE_LIST)
+# ------------------------------------------------------------
+# Combined target
+# ------------------------------------------------------------
+.PHONY: all
+all: descriptors find_matching
+	@echo "\nFull pipeline (descriptors + retrieval) completed!"
