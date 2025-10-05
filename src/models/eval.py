@@ -2,9 +2,9 @@ from pathlib import Path
 from typing import List
 from tqdm import tqdm
 import pickle
-from src.metrics.precision import mapk
-from main import ComputeImageHistogram
 
+from src.metrics.precision import mapk
+from src.models.main import ComputeImageHistogram
 from src.tools.startup import logger
 
 

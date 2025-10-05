@@ -4,9 +4,9 @@ from typing import List
 import matplotlib.pyplot as plt
 import pickle
 from PIL import Image
-from eval import evaluate_all_descriptors_and_distances
-from main import ComputeImageHistogram
 
+from src.models.eval import evaluate_all_descriptors_and_distances
+from src.models.main import ComputeImageHistogram
 from src.tools.startup import logger
 
 

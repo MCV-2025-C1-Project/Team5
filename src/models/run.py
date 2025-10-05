@@ -1,7 +1,7 @@
 import argparse
 from pathlib import Path
-from viz import generate_comprehensive_analysis
 
+from src.visualization.viz import generate_comprehensive_analysis
 from src.tools.startup import logger
 
 
