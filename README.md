@@ -69,10 +69,9 @@ The project follows a modular and reproducible structure, inspired by the cookie
 ├── Makefile           <- Makefile with convenience commands like `make data` or `make train`
 ├── README.md          <- The top-level README for developers using this project.
 ├── data
-│   ├── external       <- Data from third party sources.
-│   ├── interim        <- Intermediate data that has been transformed.
-│   ├── processed      <- The final, canonical data sets for modeling.
-│   └── raw            <- The original, immutable data dump.
+│   ├── raw            <- The original, immutable data dump.
+│   ├── descriptors    <- Descriptors extracted from images ready to use for retrieval.
+│   └── results        <- Results obtained from executing the retrieval.
 │
 ├── models             <- Trained and serialized models, model predictions, or model summaries
 │
