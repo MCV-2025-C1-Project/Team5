@@ -12,5 +12,7 @@ def read_image(image_filepath: str) -> np.ndarray:
         np.ndarray: Image array in RGB format if successful.
     """
     img_bgr = cv2.imread(image_filepath)
-    img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
-    return img_rgb
+    if img_bgr is None:
+        raise ValueError(f"Could not load image from {image_filepath}")
+
+    return img_bgr 
