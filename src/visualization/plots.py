@@ -1,14 +1,21 @@
+"""
+Visualization utilities: display images (BGR→RGB) and histograms.
+"""
+
+
 import matplotlib.pyplot as plt
 import numpy as np
+import cv2
 
 
-def display_image(img: np.ndarray) -> None:
+def display_image(img_bgr: np.ndarray) -> None:
     """Display an image using Matplotlib.
 
     Args:
         img (np.ndarray): Image array to display.
     """
-    plt.imshow(img, cmap="gray" if img.ndim == 2 else None)
+    img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+    plt.imshow(img_rgb, cmap="gray" if img_rgb.ndim == 2 else None)
     plt.show()
 
 
