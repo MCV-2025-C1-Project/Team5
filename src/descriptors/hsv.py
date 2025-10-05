@@ -20,33 +20,31 @@ def convert_img_to_hsv(img_bgr: np.ndarray) -> np.ndarray:
     """
     return cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
 
-def compute_hsv_histogram(img_path: str, values_per_bin: int = 1) -> np.ndarray:
+def compute_hsv_histogram(img_path: str, values_per_bin: int = 1) -> Tuple[np.ndarray, np.ndarray]:
     """
-    Compute HSV concatenated histogram from image path.
-    
+    Compute HSV concatenated histogram from image path, scaling H to 0–255 so all channels
+    share the same bin edges.
+
     Args:
-        img_path (str): Path to the image file.
-        values_per_bin (int): Number of intensity values per bin.
-        
+        img_path: Path to the image file.
+        values_per_bin: Number of intensity values per bin.
+
     Returns:
-        np.ndarray: Normalized concatenated HSV histogram.
+        hist_concat: Concatenated histogram [H | S | V] (length 3*N).
+        bin_edges: Shared bin edges (length N+1).
     """
-    # Load image
-    img = cv2.imread(img_path)
-    if img is None:
-        raise ValueError(f"Could not load image from {img_path}")
-    
-    # Convert BGR to HSV
-    img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    
-    # Compute histogram for each channel
-    histograms = []
-    for i in range(3):  # H, S, V
-        channel = img_hsv[:, :, i]
-        hist, _ = compute_histogram(channel, values_per_bin=values_per_bin, density=True)
-        histograms.append(hist)
-    
-    # Concatenate histograms
-    concat_hist = np.concatenate(histograms)
-    
-    return concat_hist
+    img = read_image(img_path)              # BGR
+    img_hsv = convert_img_to_hsv(img)       # HSV
+
+    h = img_hsv[:, :, 0]
+    s = img_hsv[:, :, 1]
+    v = img_hsv[:, :, 2]
+
+    hist_h, bin_edges = compute_histogram(h, values_per_bin=values_per_bin, density=True)
+    hist_s, _         = compute_histogram(s,        values_per_bin=values_per_bin, density=True)
+    hist_v, _         = compute_histogram(v,        values_per_bin=values_per_bin, density=True)
+
+    hist_concat = np.concatenate([hist_h, hist_s, hist_v])
+
+    return hist_concat, bin_edges
+
