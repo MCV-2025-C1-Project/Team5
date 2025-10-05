@@ -1,6 +1,8 @@
-import os, glob, argparse, pickle
+import os
+import glob
+import argparse
+import pickle
 import numpy as np
-import cv2
 
 from data.extract import read_image
 
@@ -17,6 +19,7 @@ DESCRIPTORS = {
 
 # Only process real images (ignore .png masks & metadata) IMG_EXTS = (".jpg", ".jpeg")
 IMG_EXTS = (".jpg", ".jpeg")
+
 
 def list_images(folder: str):
     """Return sorted list of image paths with allowed extensions."""
@@ -52,7 +55,7 @@ def compute_for_folder(folder: str, func, **kwargs):
     descs, ids = [], []
 
     for p in paths:
-        img = read_image(p)  # read the image in BGR (OpenCV default)
+        img = read_image(p, BGR=True)  # read the image in BGR (OpenCV default)
         if img is None:
             print(f"[WARN] Could not read {p}")
             continue
@@ -64,12 +67,14 @@ def compute_for_folder(folder: str, func, **kwargs):
         # extract the filename without extension to use as image ID
         stem = os.path.splitext(os.path.basename(p))[0]
         try:
-            ids.append(int(stem))  # convert to int if possible (e.g. "00023" -> 23)
+            # convert to int if possible (e.g. "00023" -> 23)
+            ids.append(int(stem))
         except ValueError:
             ids.append(stem)       # otherwise keep as string
 
     # stack all descriptors into a single 2-D array [n_images, descriptor_dim]
     return np.vstack(descs), ids
+
 
 def main():
     ap = argparse.ArgumentParser(
@@ -89,9 +94,12 @@ def main():
 
     func, defaults = DESCRIPTORS[args.descriptor]
     params = defaults.copy()
-    if args.bins  is not None: params["bins"]  = args.bins
-    if args.s_min is not None and "s_min" in defaults: params["s_min"] = args.s_min
-    if args.c_max is not None and "c_max" in defaults: params["c_max"] = args.c_max
+    if args.bins is not None:
+        params["bins"] = args.bins
+    if args.s_min is not None and "s_min" in defaults:
+        params["s_min"] = args.s_min
+    if args.c_max is not None and "c_max" in defaults:
+        params["c_max"] = args.c_max
 
     os.makedirs(args.outdir, exist_ok=True)
 
@@ -118,6 +126,7 @@ def main():
         pickle.dump(data_to_save, f)
 
     print(f"[OK] Saved {H.shape} descriptors to {out_file}")
+
 
 if __name__ == "__main__":
     main()

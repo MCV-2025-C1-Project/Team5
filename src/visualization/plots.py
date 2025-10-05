@@ -19,26 +19,27 @@ def display_image(img_bgr: np.ndarray) -> None:
     plt.show()
 
 
-def display_histogram(hist: np.ndarray, bins: np.ndarray) -> None:
+def display_histogram(hist: np.ndarray, bin_edges: np.ndarray) -> None:
     """Display a histogram as a bar plot.
 
     Args:
         hist (np.ndarray): Histogram values.
-        bins (np.ndarray): Bin edges.
+        bin_edges (np.ndarray): Bin edges.
 
     Raises:
         ValueError: If histogram and bin lengths are incompatible.
     """
     # bin edges -> remove last edge to have one bin for each value
-    if len(hist) == len(bins)-1:
-        bins = bins[:-1]
-    elif len(hist) != len(bins):
+    if len(hist) == len(bin_edges)-1:
+        bins = bin_edges[:-1]
+    elif len(hist) != len(bin_edges):
         raise ValueError(
-            f"Histogram length ({len(hist)}) does not match bins length ({len(bins)})"
+            f"Histogram length ({len(hist)}) does not match bins length ({len(bin_edges)})"
         )
 
-    plt.bar(bins, hist)
+    plt.bar(bins, hist, width=np.diff(bin_edges))
     plt.show()
+
 
 def display_rgb_histogram(hist_concat: np.ndarray, bin_edges: np.ndarray) -> None:
     """Display concatenated RGB histogram as a bar plot, superposing the three channels.
@@ -61,9 +62,12 @@ def display_rgb_histogram(hist_concat: np.ndarray, bin_edges: np.ndarray) -> Non
     fig, ax = plt.subplots(figsize=(8, 4))
 
     # Plot each channel's histogram superposed
-    ax.bar(bins, hist_concat[:n_bins], color='r', width=np.diff(bin_edges), label='Red', alpha=0.5)
-    ax.bar(bins, hist_concat[n_bins:2 * n_bins], color='g', width=np.diff(bin_edges), label='Green', alpha=0.5)
-    ax.bar(bins, hist_concat[2 * n_bins:], color='b', width=np.diff(bin_edges), label='Blue', alpha=0.5)
+    ax.bar(bins, hist_concat[:n_bins], color='r',
+           width=np.diff(bin_edges), label='Red', alpha=0.5)
+    ax.bar(bins, hist_concat[n_bins:2 * n_bins], color='g',
+           width=np.diff(bin_edges), label='Green', alpha=0.5)
+    ax.bar(bins, hist_concat[2 * n_bins:], color='b',
+           width=np.diff(bin_edges), label='Blue', alpha=0.5)
 
     ax.set_xlabel("Bin")
     ax.set_ylabel("Frequency")

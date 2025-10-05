@@ -49,7 +49,7 @@ A short description of the project.
     │   ├──descriptor_1.py
     │   └──descriptor_n.py
     │
-    ├── similarities            <- Scripts to compute similarity measures                
+    ├── distances               <- Scripts to compute distance measures
     │   ├── measure_1.py
     │   └── measure_n.py
     │
@@ -61,7 +61,7 @@ A short description of the project.
     │   ├── method_1.py
     │   └── method_n.py
     │
-    ├── tools                   <- Helper functions 
+    ├── tools                   <- Helper functions
     │   └── startup.py             <- Load parameters from yaml configuration file
     │
     └── visualization
