@@ -130,15 +130,10 @@ def main():
     )
 
     print()
-    print("=" * 80)
-    print("ANALYSIS COMPLETE")
-    print("=" * 80)
     print(f"Best Descriptor: {best_desc}")
     print(f"Best Distance:   {best_dist}")
     print(f"Best mAP@5:      {best_score:.4f}")
     print(f"Results saved to: {args.output_dir}")
-    print("=" * 80)
-
 
 if __name__ == "__main__":
     main()
