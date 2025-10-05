@@ -213,12 +213,76 @@ options:
 
 ### 2. Find matching
 
-Once the descriptors are created, we can execute the retrieval with the query dataser and find the most similar matching images.
+
+Once the descriptors for both the **query dataset** and the **museum database** are generated, this step performs the **retrieval phase** — comparing the query descriptors against all database descriptors to find the most visually similar paintings.
+
+For each query image, the script:
+1. Loads precomputed descriptors from `.pkl` files.
+2. Computes pairwise distances or similarities using the selected metric.
+3. Retrieves the top-*K* database images with the smallest (or most similar) distance scores.
+4. Saves the ranked results as a `.pkl` file inside the output directory.
+
+**Supported Metrics**
+
+The retrieval system supports multiple distance and similarity metrics, allowing flexible experimentation:
+
+| Metric | Description |
+|---------|-------------|
+| `bhattacharyya` | Statistical distance between probability distributions. |
+| `canberra` | Weighted version of the Manhattan distance. |
+| `chi_2` | Measures dissimilarity between two histograms. |
+| `l1` | Manhattan (city-block) distance. |
+| `correlation` | Measures correlation-based similarity between histograms. |
+| `js_divergence` | Symmetric and smoothed version of Kullback–Leibler divergence. |
+| `intersection` | Histogram intersection similarity. |
+| `hellinger` | Measures distance between normalized distributions. |
+| `euclidean` | Standard L2 distance. |
+| `cosine` | Cosine similarity between feature vectors. |
+
+
 
 **Example command**
 
 ```bash
 python -m src.models.find_matches data/descriptors/qsd1_w1_hsv_vpb5.pkl data/descriptors/BBDD_hsv_vpb5.pkl --metric canberra --k 10 --outdir data/results
+```
+
+This command retrieves the 10 most similar paintings from the museum database for each query image using the Canberra distance, and saves the ranked results in `data/results`.
+
+**Command-Line Arguments**
+
+Run `python -m src.descriptors.find_matches --help` to see all available options:
+
+
+```bash
+usage: find_matches.py [-h] --metric {bhattacharyya,canberra,chi_2,l1,correlation,js_divergence,intersection,hellinger,euclidean,cosine} [--k K] [--outdir OUTDIR]
+                       query_pkl db_pkl
+
+Find top-K database matches for query image descriptors.
+
+positional arguments:
+  query_pkl             Path to query descriptors .pkl file (e.g., QST1_...pkl)
+  db_pkl                Path to database descriptors .pkl file (e.g., BBDD_...pkl)
+
+options:
+  -h, --help            show this help message and exit
+  --metric {bhattacharyya,canberra,chi_2,l1,correlation,js_divergence,intersection,hellinger,euclidean,cosine}
+                        Distance/similarity metric to use.
+  --k K                 Number of top matches to return per query.
+  --outdir OUTDIR       Base output directory for saving results.
+```
+
+
+**Output format**
+
+A .pkl file storing, for each query image, the list of top-K most similar database image IDs.
+
+```python
+[
+    [23, 45, 11, 7, 38, 9, 27, 56, 18, 40],  # Top-10 matches for Query 1
+    [4, 29, 33, 20, 8, 15, 6, 17, 1, 43],    # Top-10 matches for Query 2
+    ...
+]
 ```
 
 
