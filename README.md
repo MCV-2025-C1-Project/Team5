@@ -137,11 +137,32 @@ Place the datasets in the `data/raw/` folder as follows:
 
 Once the environment and data are set up, you can execute the pipeline to perform image retrieval.
 
-### Index the database
+
+### 1. Index the database
 
 The descriptor computator module automates the extraction of global color descriptors for all images in a given dataset folder. It forms the first stage of the CBIR pipeline, generating a numerical representation for each image based on its color distribution.
 
-#### Key Features
+**Workflow**
+
+1. **Load images** from the specified dataset folder (--input).
+2. **Compute histograms** using the chosen descriptor (--descriptor).
+3. **Aggregate and serialize** all image descriptors into a single .pkl file under data/descriptors/.
+
+#### To execute automatically
+
+#TODO makefile
+
+If has been configured a Make command with the best hyperparameters set to simplify the computation of the descriptors. Just by executing:
+
+```bash
+make descriptors
+```
+
+#### To execute manually
+
+If it is desired to set different hyperparameter configurations, it is also possible to execute manually using a simple command.
+
+**Key Features**
 
 - Supports multiple color spaces: Grayscale, RGB, HSV, Lab, and YCbCr.
 - Supports agregation of consecutive values of the histogram in the same bin
@@ -149,25 +170,30 @@ The descriptor computator module automates the extraction of global color descri
 - Automatically loads all .jpg or .jpeg images from the input folder.
 - Stores computed descriptors and metadata in a single .pkl file for later use in retrieval and evaluation.
 
-#### Workflow
 
-1. **Load images** from the specified dataset folder (--input).
-2. **Compute histograms** using the chosen descriptor (--descriptor).
-3. **Aggregate and serialize** all image descriptors into a single .pkl file under data/descriptors/.
-
-#### Example command
+**Example command**
 
 ``` bash
-python src/descriptors/compute_descriptors.py \
+python -m src.descriptors.compute_descriptors \
     --descriptor hsv \
     --input data/raw/BBDD \
     --outdir data/descriptors \
-    --values_per_bin 2
+    --values_per_bin 5
 ```
 
-#### Command-Line Arguments
+This process must be done to query datasets as well, example command:
 
-Run `python main.py --help` to see all available options:
+``` bash
+python -m src.descriptors.compute_descriptors \
+    --descriptor hsv \
+    --input data/raw/qsd1_w1 \
+    --outdir data/descriptors \
+    --values_per_bin 5
+```
+
+**Command-Line Arguments**
+
+Run `python -m src.descriptors.compute_descriptors --help` to see all available options:
 
 ```
 usage: compute_descriptors.py [-h] --descriptor {grayscale,hsv,lab,rgb,ycbcr} --input INPUT [--outdir OUTDIR] [--values_per_bin VALUES_PER_BIN]
@@ -184,11 +210,22 @@ options:
                         Intensity values per bin
 ```
 
-### Evaluate descriptors and distances
 
-#TODO
+### 2. Find matching
 
-#### Hyperparameters
+Once the descriptors are created, we can execute the retrieval with the query dataser and find the most similar matching images.
+
+**Example command**
+
+```bash
+python -m src.models.find_matches data/descriptors/qsd1_w1_hsv_vpb5.pkl data/descriptors/BBDD_hsv_vpb5.pkl --metric canberra --k 10 --outdir data/results
+```
+
+
+### 3. Evaluate descriptors and distances
+
+
+**Hyperparameters**
 
 Key hyperparameters can be configured:
 
@@ -200,12 +237,146 @@ Key hyperparameters can be configured:
 | `k` | Number of top results | `5` | Any positive integer |
 
 
-### Basic Usage
+**Basic Usage**
 
 Run with default settings (HSV descriptor + Chi-Squared distance):
 ```bash
-python #TODO
+python main.py
 ```
+
+**Custom Descriptor and Distance Metric**
+
+```bash
+python main.py --descriptor rgb --distance_metric euclidean
+```
+
+**Adjust Histogram Binning**
+
+```bash
+# Use coarser binning (128 bins instead of 256)
+python main.py --values_per_bin 2 --descriptor hsv
+```
+
+**Evaluate All Combinations**
+
+Run comprehensive evaluation of all descriptor-distance combinations:
+```bash
+python main.py --evaluate_all
+```
+
+This will:
+- Test all 50 descriptor-distance combinations (5 descriptors × 10 distance metrics)
+- Generate heatmaps showing performance
+- Find the best configuration
+- Create visualizations with the best configuration
+
+**Custom Data Paths**
+
+```bash
+python main.py \
+  --query_dir /path/to/query/images \
+  --museum_dir /path/to/museum/database \
+  --ground_truth_path /path/to/ground_truth.pkl
+```
+
+**Control Visualizations**
+
+```bash
+# Enable visualizations with custom number
+python main.py --visualize --num_visualizations 10
+
+# Disable visualizations
+python main.py --no_visualize
+```
+
+**Complete Example**
+
+```bash
+python main.py \
+  --descriptor lab \
+  --distance_metric bhattacharyya \
+  --values_per_bin 1 \
+  --k 10 \
+  --visualize \
+  --num_visualizations 5 \
+  --output_dir my_results
+```
+
+**Command-Line Arguments**
+
+Run `python main.py --help` to see all available options:
+
+```
+usage: main.py [-h] [--query_dir QUERY_DIR] [--museum_dir MUSEUM_DIR]
+               [--ground_truth_path GROUND_TRUTH_PATH]
+               [--output_dir OUTPUT_DIR]
+               [--descriptor {rgb,hsv,ycbcr,lab,grayscale}]
+               [--values_per_bin VALUES_PER_BIN]
+               [--distance_metric {euclidean,l1,chi_squared,histogram_intersection,
+                                   hellinger,cosine,canberra,bhattacharyya,jeffrey,
+                                   correlation}]
+               [--k K] [--evaluate_all] [--visualize] [--no_visualize]
+               [--num_visualizations NUM_VISUALIZATIONS]
+
+Content-Based Image Retrieval System
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --query_dir QUERY_DIR
+                        Directory containing query images
+  --museum_dir MUSEUM_DIR
+                        Directory containing museum database images
+  --ground_truth_path GROUND_TRUTH_PATH
+                        Path to ground truth pickle file
+  --output_dir OUTPUT_DIR
+                        Output directory for results
+  --descriptor {rgb,hsv,ycbcr,lab,grayscale}
+                        Image descriptor type
+  --values_per_bin VALUES_PER_BIN
+                        Number of intensity values per histogram bin
+  --distance_metric {euclidean,l1,chi_squared,histogram_intersection,hellinger,
+                     cosine,canberra,bhattacharyya,jeffrey,correlation}
+                        Distance metric for similarity comparison
+  --k K                 Number of top results to retrieve
+  --evaluate_all        Evaluate all descriptor-distance combinations
+  --visualize           Generate visualizations
+  --no_visualize        Skip visualizations
+  --num_visualizations NUM_VISUALIZATIONS
+                        Number of sample query visualizations to generate
+```
+
+**Output**
+
+Results are saved to the `data/results/` directory (or custom `--output_dir`):
+
+**Single Experiment**
+- `visualization_*.png` - Query-result visualizations
+
+**Comprehensive Evaluation**
+- `heatmap_mAP@1.png` - Heatmap of mAP@1 performance
+- `heatmap_mAP@5.png` - Heatmap of mAP@5 performance
+- `best_config_visualization_*.png` - Visualizations using best configuration
+
+
+**Console Output**
+```
+Building database: hsv + chi_squared (bins_per_value=1)...
+Processing museum images: 100%|████████████| 287/287 [00:15<00:00, 18.5it/s]
+Queries: 100%|████████████████████████████| 30/30 [00:02<00:00, 12.3it/s]
+
+======================================================================
+EVALUATION RESULTS
+======================================================================
+mAP@1: 0.7333
+mAP@5: 0.8156
+======================================================================
+```
+
+**Metrics Explanation**
+- **mAP@1**: Mean Average Precision considering only the top-1 retrieved image
+- **mAP@5**: Mean Average Precision considering top-5 retrieved images
+- Higher values are better (range: 0.0 to 1.0)
+
 
 
 This will:
@@ -213,6 +384,7 @@ This will:
 - Generate heatmaps showing performance
 - Find the best configuration
 - Create visualizations with the best configuration
+
 
 
 ## Team members:
