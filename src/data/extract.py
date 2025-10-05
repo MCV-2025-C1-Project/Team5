@@ -1,3 +1,7 @@
+"""
+Utilities to load images from files.
+"""
+
 import cv2
 import numpy as np
 
