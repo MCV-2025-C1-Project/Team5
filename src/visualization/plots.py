@@ -1,7 +1,6 @@
 """
-Visualization utilities: display images (BGR→RGB) and histograms.
+Visualization utilities: display images and histograms.
 """
-
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9,7 +8,8 @@ import cv2
 
 
 def display_image(img_bgr: np.ndarray) -> None:
-    """Display an image using Matplotlib.
+    """
+    Display an image using Matplotlib.
 
     Args:
         img (np.ndarray): Image array to display.
@@ -42,7 +42,8 @@ def display_histogram(hist: np.ndarray, bin_edges: np.ndarray) -> None:
 
 
 def display_rgb_histogram(hist_concat: np.ndarray, bin_edges: np.ndarray) -> None:
-    """Display concatenated RGB histogram as a bar plot, superposing the three channels.
+    """
+    Display concatenated RGB histogram as a bar plot, superposing the three channels.
 
     Args:
         hist_concat (np.ndarray): Concatenated histogram values for R, G, B channels (length 3*N).
@@ -75,3 +76,103 @@ def display_rgb_histogram(hist_concat: np.ndarray, bin_edges: np.ndarray) -> Non
     ax.legend()
     plt.tight_layout()
     plt.show()
+
+def display_lab_histogram(hist_concat: np.ndarray, bin_edges: np.ndarray) -> None:
+    """
+    Display concatenated LAB histogram as a bar plot, superposing the three channels.
+
+    Args:
+        hist_concat (np.ndarray): Concatenated histogram values for L, a, b channels (length 3*N).
+        bin_edges (np.ndarray): Bin edges for a single channel (length N+1 for N bins).
+
+    Raises:
+        ValueError: If histogram and bin_edges lengths are incompatible.
+    """
+    n_bins = len(bin_edges) - 1
+    if hist_concat.shape[0] != 3 * n_bins:
+        raise ValueError(
+            f"Expected concatenated histogram of length {3 * n_bins}, got {hist_concat.shape[0]}"
+        )
+
+    bins = bin_edges[:-1]
+    widths = np.diff(bin_edges)
+
+    fig, ax = plt.subplots(figsize=(8, 4))
+    ax.bar(bins, hist_concat[:n_bins],           width=widths, alpha=0.5, label='L', color='#333333')
+    ax.bar(bins, hist_concat[n_bins:2*n_bins],   width=widths, alpha=0.5, label='a', color='#D55E00')
+    ax.bar(bins, hist_concat[2*n_bins:],         width=widths, alpha=0.5, label='b', color='#0072B2')
+
+    ax.set_xlabel("Bin")
+    ax.set_ylabel("Frequency")
+    ax.set_title("LAB Histogram (superposed channels)")
+    ax.legend()
+    plt.tight_layout()
+    plt.show()
+
+def display_hsv_histogram(hist_concat: np.ndarray, bin_edges: np.ndarray) -> None:
+    """
+    Display concatenated HSV histogram as a bar plot, superposing the three channels.
+
+    Args:
+        hist_concat (np.ndarray): Concatenated histogram values for H, S, V channels (length 3*N).
+        bin_edges (np.ndarray): Bin edges for a single channel (length N+1 for N bins).
+
+    Raises:
+        ValueError: If histogram and bin_edges lengths are incompatible.
+    """
+    n_bins = len(bin_edges) - 1
+    if hist_concat.shape[0] != 3 * n_bins:
+        raise ValueError(
+            f"Expected concatenated histogram of length {3 * n_bins}, got {hist_concat.shape[0]}"
+        )
+
+    bins = bin_edges[:-1]
+    widths = np.diff(bin_edges)
+
+    fig, ax = plt.subplots(figsize=(8, 4))
+    ax.bar(bins, hist_concat[:n_bins],         width=widths, alpha=0.5, label='H', color='#8E44AD')  # purple
+    ax.bar(bins, hist_concat[n_bins:2*n_bins], width=widths, alpha=0.5, label='S', color='#27AE60')  # green
+    ax.bar(bins, hist_concat[2*n_bins:],       width=widths, alpha=0.5, label='V', color='#F1C40F')  # yellow
+
+    ax.set_xlabel("Bin")
+    ax.set_ylabel("Frequency")
+    ax.set_title("HSV Histogram (superposed channels)")
+    ax.legend()
+    plt.tight_layout()
+    plt.show()
+
+def display_ycbcr_histogram(hist_concat: np.ndarray, bin_edges: np.ndarray) -> None:
+    """
+    Display concatenated YCbCr histogram as a bar plot, superposing the three channels.
+
+    Note: Assumes hist_concat is ordered as [Y | Cb | Cr] (length 3*N), and that
+    OpenCV conversion was BGR→YCrCb but channels were reordered to Y, Cb, Cr.
+
+    Args:
+        hist_concat (np.ndarray): Concatenated histogram values for Y, Cb, Cr (length 3*N).
+        bin_edges (np.ndarray): Bin edges for a single channel (length N+1 for N bins).
+
+    Raises:
+        ValueError: If histogram and bin_edges lengths are incompatible.
+    """
+    n_bins = len(bin_edges) - 1
+    if hist_concat.shape[0] != 3 * n_bins:
+        raise ValueError(
+            f"Expected concatenated histogram of length {3 * n_bins}, got {hist_concat.shape[0]}"
+        )
+
+    bins = bin_edges[:-1]
+    widths = np.diff(bin_edges)
+
+    fig, ax = plt.subplots(figsize=(8, 4))
+    ax.bar(bins, hist_concat[:n_bins],           width=widths, alpha=0.5, label='Y',  color='#444444')
+    ax.bar(bins, hist_concat[n_bins:2*n_bins],   width=widths, alpha=0.5, label='Cb', color='#1f77b4')
+    ax.bar(bins, hist_concat[2*n_bins:],         width=widths, alpha=0.5, label='Cr', color='#d62728')
+
+    ax.set_xlabel("Bin")
+    ax.set_ylabel("Frequency")
+    ax.set_title("YCbCr Histogram (superposed channels)")
+    ax.legend()
+    plt.tight_layout()
+    plt.show()
+
