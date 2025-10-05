@@ -286,170 +286,70 @@ A .pkl file storing, for each query image, the list of top-K most similar databa
 ```
 
 
-### 3. Evaluate descriptors and distances
+### Evaluate descriptors and distances
 
+`python -m src.models.run --query_dir data/raw/qsd1_w1 --museum_dir data/raw/BBDD --ground_truth data/raw/qsd1_w1/gt_corresps.pkl --values_per_bin 5 --output_dir results --k 5 --descriptors hsv --distances canberra.canberra_distance`
 
-**Hyperparameters**
+#### Hyperparameters
 
 Key hyperparameters can be configured:
 
-| Parameter | Description | Default | Options |
-|-----------|-------------|---------|---------|
-| `descriptor` | Image descriptor type | `hsv` | rgb, hsv, ycbcr, lab, grayscale |
-| `distance_metric` | Similarity metric | `chi_squared` | euclidean, l1, chi_squared, histogram_intersection, hellinger, cosine, canberra, bhattacharyya, jeffrey, correlation |
-| `values_per_bin` | Histogram bin size | `1` | 1-256 (1=256 bins, 2=128 bins, etc.) |
-| `k` | Number of top results | `5` | Any positive integer |
+| Parameter        | Description                                                                 | Default                    | Options                                                                                                                                                                                                                                                                                                                                                            |
+| ---------------- | --------------------------------------------------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `--query_dir`      | Path to query images directory                                              | **Required**               | e.g., `path/to/qsd1_w1`, `qsd2_w2`                                                                                                                                                                                                                                                                                                                                         |
+| `--museum_dir`     | Path to museum database directory                                           | **Required**               | e.g., `path/to/BBDD`, `museum_db`                                                                                                                                                                                                                                                                                                                                          |
+| `--ground_truth`   | Path to ground truth pickle file for evaluation                             | **Required**               | e.g., `path/to/gt_corresps.pkl`                                                                                                                                                                                                                                                                                                                                            |
+| `--values_per_bin` | Number of intensity values per histogram bin (1=256 bins, 2=128 bins, etc.) | `1`                        | Integer (1–256)                                                                                                                                                                                                                                                                                                                                                    |
+| `--output_dir`     | Directory to save results                                         | `path/to/results`             | Any valid directory path                                                                                                                                                                                                                                                                                                                                           |
+| `--k`              | Number of top-k precise values to save                                          | `5`                        | Any positive integer                                                                                                                                                                                                                                                                                                                                               |
+| `--descriptors`    | Color space or descriptor type(s) to evaluate                               | `None` (→ all descriptors) | `rgb`, `hsv`, `ycbcr`, `lab`, `grayscale`                                                                                                                                                                                                                                                                                                                          |
+| `--distances`      | Distance metric(s) to evaluate for image similarity                         | `None` (→ all metrics)     | `euclidean.euclidean_distance`, `l1.compute_l1_distance`, `chi_2.compute_chi_2_distance`, `histogram_intersection.compute_histogram_intersection`, `hellinger.hellinger_kernel`, `cosine.compute_cosine_similarity`, `canberra.canberra_distance`, `bhattacharyya.bhattacharyya_distance`, `jensen_shannon.jeffrey_divergence`, `correlation.correlation_distance` |
 
 
 **Basic Usage**
 
-Run with default settings (HSV descriptor + Chi-Squared distance):
-```bash
-python main.py
-```
 
 **Custom Descriptor and Distance Metric**
 
 ```bash
-python main.py --descriptor rgb --distance_metric euclidean
+python -m src.models.run --query_dir data/raw/qsd1_w1 --museum_dir data/raw/BBDD --ground_truth data/raw/qsd1_w1/gt_corresps.pkl --descriptors rgb --distances l1.compute_l1_distance
 ```
 
 **Adjust Histogram Binning**
 
 ```bash
 # Use coarser binning (128 bins instead of 256)
-python main.py --values_per_bin 2 --descriptor hsv
+python -m src.models.run --query_dir data/raw/qsd1_w1 --museum_dir data/raw/BBDD --ground_truth data/raw/qsd1_w1/gt_corresps.pkl --values_per_bin 2 --descriptors hsv
 ```
 
 **Evaluate All Combinations**
 
 Run comprehensive evaluation of all descriptor-distance combinations:
 ```bash
-python main.py --evaluate_all
+python -m src.models.run --query_dir data/raw/qsd1_w1 --museum_dir data/raw/BBDD --ground_truth data/raw/qsd1_w1/gt_corresps.pkl
 ```
 
 This will:
 - Test all 50 descriptor-distance combinations (5 descriptors × 10 distance metrics)
 - Generate heatmaps showing performance
 - Find the best configuration
-- Create visualizations with the best configuration
+- Create visualizations with the best configuration in the results folder
 
-**Custom Data Paths**
-
-```bash
-python main.py \
-  --query_dir /path/to/query/images \
-  --museum_dir /path/to/museum/database \
-  --ground_truth_path /path/to/ground_truth.pkl
-```
-
-**Control Visualizations**
-
-```bash
-# Enable visualizations with custom number
-python main.py --visualize --num_visualizations 10
-
-# Disable visualizations
-python main.py --no_visualize
-```
-
-**Complete Example**
-
-```bash
-python main.py \
-  --descriptor lab \
-  --distance_metric bhattacharyya \
-  --values_per_bin 1 \
-  --k 10 \
-  --visualize \
-  --num_visualizations 5 \
-  --output_dir my_results
-```
-
-**Command-Line Arguments**
-
-Run `python main.py --help` to see all available options:
-
-```
-usage: main.py [-h] [--query_dir QUERY_DIR] [--museum_dir MUSEUM_DIR]
-               [--ground_truth_path GROUND_TRUTH_PATH]
-               [--output_dir OUTPUT_DIR]
-               [--descriptor {rgb,hsv,ycbcr,lab,grayscale}]
-               [--values_per_bin VALUES_PER_BIN]
-               [--distance_metric {euclidean,l1,chi_squared,histogram_intersection,
-                                   hellinger,cosine,canberra,bhattacharyya,jeffrey,
-                                   correlation}]
-               [--k K] [--evaluate_all] [--visualize] [--no_visualize]
-               [--num_visualizations NUM_VISUALIZATIONS]
-
-Content-Based Image Retrieval System
-
-optional arguments:
-  -h, --help            show this help message and exit
-  --query_dir QUERY_DIR
-                        Directory containing query images
-  --museum_dir MUSEUM_DIR
-                        Directory containing museum database images
-  --ground_truth_path GROUND_TRUTH_PATH
-                        Path to ground truth pickle file
-  --output_dir OUTPUT_DIR
-                        Output directory for results
-  --descriptor {rgb,hsv,ycbcr,lab,grayscale}
-                        Image descriptor type
-  --values_per_bin VALUES_PER_BIN
-                        Number of intensity values per histogram bin
-  --distance_metric {euclidean,l1,chi_squared,histogram_intersection,hellinger,
-                     cosine,canberra,bhattacharyya,jeffrey,correlation}
-                        Distance metric for similarity comparison
-  --k K                 Number of top results to retrieve
-  --evaluate_all        Evaluate all descriptor-distance combinations
-  --visualize           Generate visualizations
-  --no_visualize        Skip visualizations
-  --num_visualizations NUM_VISUALIZATIONS
-                        Number of sample query visualizations to generate
-```
 
 **Output**
 
-Results are saved to the `data/results/` directory (or custom `--output_dir`):
-
-**Single Experiment**
-- `visualization_*.png` - Query-result visualizations
-
-**Comprehensive Evaluation**
-- `heatmap_mAP@1.png` - Heatmap of mAP@1 performance
-- `heatmap_mAP@5.png` - Heatmap of mAP@5 performance
-- `best_config_visualization_*.png` - Visualizations using best configuration
-
-
-**Console Output**
-```
-Building database: hsv + chi_squared (bins_per_value=1)...
-Processing museum images: 100%|████████████| 287/287 [00:15<00:00, 18.5it/s]
-Queries: 100%|████████████████████████████| 30/30 [00:02<00:00, 12.3it/s]
-
-======================================================================
-EVALUATION RESULTS
-======================================================================
-mAP@1: 0.7333
-mAP@5: 0.8156
-======================================================================
-```
+Results are saved to the `path/to/results/` directory (or custom `--output_dir`):
 
 **Metrics Explanation**
 - **mAP@1**: Mean Average Precision considering only the top-1 retrieved image
 - **mAP@5**: Mean Average Precision considering top-5 retrieved images
 - Higher values are better (range: 0.0 to 1.0)
 
-
-
 This will:
 - Test all 50 descriptor-distance combinations (5 descriptors × 10 distance metrics)
 - Generate heatmaps showing performance
 - Find the best configuration
 - Create visualizations with the best configuration
-
-
 
 ## Team members:
 
