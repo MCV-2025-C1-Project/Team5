@@ -1,4 +1,4 @@
-# Content-Based Image Retrieval (CBIR)
+# Content-Based Image Retrieval
 
 This project implements a **query-by-example image retrieval system** designed to find paintings in the *Can Framis Museum* image collection based on their **visual content**.  
 
@@ -6,7 +6,7 @@ Developed by **Team 5** as part of the **C1 – Content Based Image Retrieval** 
 
 
 ## Overview
-This project implements a Content-Based Image Retrieval (CBIR) system designed to search paintings in the Can Framis Museum dataset based on color, texture, and local descriptors.
+This project implements a Content-Based Image Retrieval system designed to search paintings in the Can Framis Museum dataset based on color, texture, and local descriptors.
 The goal is to explore classical and modern feature extraction techniques for visual similarity search.
 
 The following diagram illustrates the CBIR workflow implemented in this project.
@@ -366,6 +366,10 @@ This will:
 - Generate heatmaps showing performance
 - Find the best configuration
 - Create visualizations with the best configuration
+
+**Experiments**
+
+Additional experiments can be found [here](https://drive.google.com/file/d/1xAyKrl3MnFGKuZpDm2FUu5bInHqnu2BU/view?usp=sharing)
 
 ## Team members:
 
