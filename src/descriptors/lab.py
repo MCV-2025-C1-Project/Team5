@@ -2,26 +2,30 @@
 LAB concatenated histogram descriptor.
 """
 
+from typing import Tuple
 import cv2
 import numpy as np
-from .histogram import compute_histogram
+from src.descriptors.histogram import compute_histogram
 from src.data.extract import read_image
-from typing import Tuple
 
-def convert_img_to_lab(img: np.ndarray) -> np.ndarray:
+
+def convert_img_to_lab(img_bgr: np.ndarray) -> np.ndarray:
     """Convert a BGR image to LAB.
 
     Args:
-        img (np.ndarray): Input image in BGR format.
+        img_bgr (np.ndarray): Input image in BGR format.
 
     Returns:
         np.ndarray: LAB image.
     """
-    img_lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+    img_lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
     return img_lab
 
 
-def compute_lab_histogram(img_path: str, values_per_bin: int = 1) -> Tuple[np.ndarray, np.ndarray]:
+def compute_lab_histogram(
+    img_path: str,
+    values_per_bin: int = 1
+) -> Tuple[np.ndarray, np.ndarray]:
     """
     Compute LAB concatenated histogram from image path.
 
@@ -44,14 +48,14 @@ def compute_lab_histogram(img_path: str, values_per_bin: int = 1) -> Tuple[np.nd
     b_channel = img_lab[:, :, 2]
 
     # Compute histogram for each channel
-    hist_l, bin_edges = compute_histogram(l_channel, values_per_bin=values_per_bin, density=True)
-    hist_a, _ = compute_histogram(a_channel, values_per_bin=values_per_bin, density=True)
-    hist_b, _ = compute_histogram(b_channel, values_per_bin=values_per_bin, density=True)
+    hist_l, bin_edges = compute_histogram(
+        l_channel, values_per_bin=values_per_bin, density=True)
+    hist_a, _ = compute_histogram(
+        a_channel, values_per_bin=values_per_bin, density=True)
+    hist_b, _ = compute_histogram(
+        b_channel, values_per_bin=values_per_bin, density=True)
 
     # Concatenate in LAB order
     concat_hist = np.concatenate([hist_l, hist_a, hist_b])
 
     return concat_hist, bin_edges
-
-
-   

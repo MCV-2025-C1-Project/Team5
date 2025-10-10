@@ -4,9 +4,10 @@ Grayscale histogram descriptor.
 
 import cv2
 import numpy as np
-from .histogram import compute_histogram
+from src.descriptors.histogram import compute_histogram
 from src.data.extract import read_image
 from typing import Tuple
+
 
 def convert_img_to_gray_scale(img: np.ndarray) -> np.ndarray:
     """Convert a BGR image to grayscale.
@@ -21,7 +22,10 @@ def convert_img_to_gray_scale(img: np.ndarray) -> np.ndarray:
     return img_gray
 
 
-def compute_grayscale_histogram(img_path: str, values_per_bin: int = 1) -> Tuple[np.ndarray, np.ndarray]:
+def compute_grayscale_histogram(
+    img_path: str,
+    values_per_bin: int = 1
+) -> Tuple[np.ndarray, np.ndarray]:
     """
     Compute grayscale histogram from image path.
 
@@ -35,6 +39,7 @@ def compute_grayscale_histogram(img_path: str, values_per_bin: int = 1) -> Tuple
     """
     img = read_image(img_path)
     img_gray = convert_img_to_gray_scale(img)
-    hist, bin_edges = compute_histogram(img_gray, values_per_bin=values_per_bin, density=True)
+    hist, bin_edges = compute_histogram(
+        img_gray, values_per_bin=values_per_bin, density=True)
 
     return hist, bin_edges

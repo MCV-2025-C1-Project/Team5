@@ -77,6 +77,7 @@ def display_rgb_histogram(hist_concat: np.ndarray, bin_edges: np.ndarray) -> Non
     plt.tight_layout()
     plt.show()
 
+
 def display_lab_histogram(hist_concat: np.ndarray, bin_edges: np.ndarray) -> None:
     """
     Display concatenated LAB histogram as a bar plot, superposing the three channels.
@@ -98,9 +99,12 @@ def display_lab_histogram(hist_concat: np.ndarray, bin_edges: np.ndarray) -> Non
     widths = np.diff(bin_edges)
 
     fig, ax = plt.subplots(figsize=(8, 4))
-    ax.bar(bins, hist_concat[:n_bins],           width=widths, alpha=0.5, label='L', color='#333333')
-    ax.bar(bins, hist_concat[n_bins:2*n_bins],   width=widths, alpha=0.5, label='a', color='#D55E00')
-    ax.bar(bins, hist_concat[2*n_bins:],         width=widths, alpha=0.5, label='b', color='#0072B2')
+    ax.bar(bins, hist_concat[:n_bins],
+           width=widths, alpha=0.5, label='L', color='#333333')
+    ax.bar(bins, hist_concat[n_bins:2*n_bins],
+           width=widths, alpha=0.5, label='a', color='#D55E00')
+    ax.bar(bins, hist_concat[2*n_bins:],
+           width=widths, alpha=0.5, label='b', color='#0072B2')
 
     ax.set_xlabel("Bin")
     ax.set_ylabel("Frequency")
@@ -108,6 +112,7 @@ def display_lab_histogram(hist_concat: np.ndarray, bin_edges: np.ndarray) -> Non
     ax.legend()
     plt.tight_layout()
     plt.show()
+
 
 def display_hsv_histogram(hist_concat: np.ndarray, bin_edges: np.ndarray) -> None:
     """
@@ -130,9 +135,12 @@ def display_hsv_histogram(hist_concat: np.ndarray, bin_edges: np.ndarray) -> Non
     widths = np.diff(bin_edges)
 
     fig, ax = plt.subplots(figsize=(8, 4))
-    ax.bar(bins, hist_concat[:n_bins],         width=widths, alpha=0.5, label='H', color='#8E44AD')  # purple
-    ax.bar(bins, hist_concat[n_bins:2*n_bins], width=widths, alpha=0.5, label='S', color='#27AE60')  # green
-    ax.bar(bins, hist_concat[2*n_bins:],       width=widths, alpha=0.5, label='V', color='#F1C40F')  # yellow
+    ax.bar(bins, hist_concat[:n_bins],         width=widths,
+           alpha=0.5, label='H', color='#8E44AD')  # purple
+    ax.bar(bins, hist_concat[n_bins:2*n_bins], width=widths,
+           alpha=0.5, label='S', color='#27AE60')  # green
+    ax.bar(bins, hist_concat[2*n_bins:],       width=widths,
+           alpha=0.5, label='V', color='#F1C40F')  # yellow
 
     ax.set_xlabel("Bin")
     ax.set_ylabel("Frequency")
@@ -140,6 +148,7 @@ def display_hsv_histogram(hist_concat: np.ndarray, bin_edges: np.ndarray) -> Non
     ax.legend()
     plt.tight_layout()
     plt.show()
+
 
 def display_ycbcr_histogram(hist_concat: np.ndarray, bin_edges: np.ndarray) -> None:
     """
@@ -165,9 +174,12 @@ def display_ycbcr_histogram(hist_concat: np.ndarray, bin_edges: np.ndarray) -> N
     widths = np.diff(bin_edges)
 
     fig, ax = plt.subplots(figsize=(8, 4))
-    ax.bar(bins, hist_concat[:n_bins],           width=widths, alpha=0.5, label='Y',  color='#444444')
-    ax.bar(bins, hist_concat[n_bins:2*n_bins],   width=widths, alpha=0.5, label='Cb', color='#1f77b4')
-    ax.bar(bins, hist_concat[2*n_bins:],         width=widths, alpha=0.5, label='Cr', color='#d62728')
+    ax.bar(bins, hist_concat[:n_bins],
+           width=widths, alpha=0.5, label='Y',  color='#444444')
+    ax.bar(bins, hist_concat[n_bins:2*n_bins],
+           width=widths, alpha=0.5, label='Cb', color='#1f77b4')
+    ax.bar(bins, hist_concat[2*n_bins:],
+           width=widths, alpha=0.5, label='Cr', color='#d62728')
 
     ax.set_xlabel("Bin")
     ax.set_ylabel("Frequency")
@@ -176,3 +188,36 @@ def display_ycbcr_histogram(hist_concat: np.ndarray, bin_edges: np.ndarray) -> N
     plt.tight_layout()
     plt.show()
 
+
+def display_2d_histogram(hist: np.ndarray, bin_edges: np.ndarray) -> None:
+    """Display a 2D histogram as a 3D bar plot.
+
+    Args:
+        hist (np.ndarray): 2D array representing histogram frequencies.
+        bin_edges (np.ndarray): Sequence of arrays containing the bin edges
+            for each histogram dimension.
+
+    Returns:
+        None: Displays a 3D histogram visualization.
+    """
+    fig = plt.figure()
+    ax = fig.add_subplot(projection='3d')
+
+    # Construct arrays for the anchor positions of the 16 bars.
+    xpos, ypos = np.meshgrid(
+        bin_edges[0][:-1] + 0.25,
+        bin_edges[1][:-1] + 0.25,
+        indexing="ij"
+    )
+    xpos = xpos.ravel()
+    ypos = ypos.ravel()
+    zpos = np.zeros_like(xpos)
+
+    # Construct arrays with the dimensions for all the bars.
+    dx = dy = 0.5 * np.ones_like(zpos)
+    dz = hist.ravel()
+
+    ax.bar3d(xpos, ypos, zpos, dx, dy, dz, zsort='average')
+    ax.set_zlabel("Frequency")
+
+    plt.show()
