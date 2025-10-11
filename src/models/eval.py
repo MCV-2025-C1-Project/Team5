@@ -25,6 +25,8 @@ ALL_DESCRIPTORS = [
     'spatial_pyramid_hsv',
     'block_histogram_lab',
     'block_histogram_hsv',
+    'block_histogram_2d_lab',
+    'block_histogram_2d_hsv',
     'block_histogram_3d_lab',
     'block_histogram_3d_hsv'
 ]
@@ -58,6 +60,8 @@ DESCRIPTOR_NAMES = {
     'spatial_pyramid_hsv': 'Spatial_Pyramid_HSV',
     'block_histogram_lab': 'Block_Histogram_LAB',
     'block_histogram_hsv': 'Block_Histogram_HSV',
+    'block_histogram_2d_lab': 'Block_Histogram_2D_LAB',
+    'block_histogram_2d_hsv': 'Block_Histogram_2D_HSV',
     'block_histogram_3d_lab': 'Block_Histogram_3D_LAB',
     'block_histogram_3d_hsv': 'Block_Histogram_3D_HSV'
 }

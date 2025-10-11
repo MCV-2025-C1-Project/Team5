@@ -10,7 +10,9 @@ from src.descriptors import (grayscale,
                              rgb,
                              ycbcr,
                              dim2,
-                             dim3)
+                             dim3,
+                             spatial_pyramid,
+                             block_histogram)
 
 from src.tools.startup import logger
 
@@ -27,6 +29,14 @@ DESCRIPTORS = {
     '2d_ycbcr':  (dim2.compute_2d_histogram_ycbcr,       {"values_per_bin": 1}),
     '2d_lab':  (dim2.compute_2d_histogram_lab,           {"values_per_bin": 1}),
     '2d_hsv':  (dim2.compute_2d_histogram_hsv,           {"values_per_bin": 1}),
+    'spatial_pyramid_lab': (spatial_pyramid.spatial_pyramid_histogram_lab, {"values_per_bin": 1, "levels": 3}),
+    'spatial_pyramid_hsv': (spatial_pyramid.spatial_pyramid_histogram_hsv, {"values_per_bin": 1, "levels": 3}),
+    'block_histogram_lab': (block_histogram.block_based_histogram_lab, {"values_per_bin": 1}),
+    'block_histogram_hsv': (block_histogram.block_based_histogram_hsv, {"values_per_bin": 1}),
+    'block_histogram_2d_lab': (block_histogram.block_based_histogram_2d_lab, {"values_per_bin": 1}),
+    'block_histogram_2d_hsv': (block_histogram.block_based_histogram_2d_hsv, {"values_per_bin": 1}),
+    'block_histogram_3d_lab': (block_histogram.block_based_histogram_3d_lab, {"values_per_bin": 1}),
+    'block_histogram_3d_hsv': (block_histogram.block_based_histogram_3d_hsv, {"values_per_bin": 1})
 }
 
 # Only process real images (ignore .png masks & metadata) IMG_EXTS = (".jpg", ".jpeg")

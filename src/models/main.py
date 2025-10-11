@@ -55,6 +55,8 @@ DESCRIPTOR_FUNCTIONS = {
     'spatial_pyramid_hsv': spatial_pyramid.spatial_pyramid_histogram_hsv,
     'block_histogram_lab': block_histogram.block_based_histogram_lab,
     'block_histogram_hsv': block_histogram.block_based_histogram_hsv,
+    'block_histogram_2d_lab': block_histogram.block_based_histogram_2d_lab,
+    'block_histogram_2d_hsv': block_histogram.block_based_histogram_2d_hsv,
     'block_histogram_3d_lab': block_histogram.block_based_histogram_3d_lab,
     'block_histogram_3d_hsv': block_histogram.block_based_histogram_3d_hsv
 }

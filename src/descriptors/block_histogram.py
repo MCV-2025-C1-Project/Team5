@@ -2,7 +2,7 @@ import numpy as np
 from typing import Tuple
 
 from src.data.extract import read_image
-from src.descriptors import lab, hsv, dim3
+from src.descriptors import lab, hsv, dim3, dim2
 
 
 def block_based_histogram_from_array(
@@ -99,7 +99,6 @@ def block_based_histogram(
         img_bgr, compute_histogram_func, values_per_bin, grid_size, **kwargs
     )
 
-
 def block_based_histogram_lab(img_path: str, **kwargs):
     """
     Compute block-based histograms using the Lab color space.
@@ -121,7 +120,6 @@ def block_based_histogram_lab(img_path: str, **kwargs):
         compute_histogram_func=lab.compute_lab_histogram_from_array,
         **kwargs
     )
-
 
 def block_based_histogram_hsv(img_path: str, **kwargs):
     """
@@ -145,6 +143,49 @@ def block_based_histogram_hsv(img_path: str, **kwargs):
         **kwargs
     )
 
+def block_based_histogram_2d_lab(img_path: str, **kwargs):
+    """
+    Compute block-based 2D histograms in the Lab color space.
+
+    This function divides the image into spatial blocks and computes a 2D Lab histogram for each block,
+    concatenating all block histograms into a single high-dimensional descriptor vector.
+
+    Args:
+        img_path (str): Path to the input image file.
+        **kwargs (dict, optional): Additional parameters passed to the 2D histogram computation.
+
+    Returns:
+        tuple[np.ndarray, np.ndarray]:
+            - Concatenated 2D histogram descriptor in the Lab color space.
+            - Bin edges or structure returned by the histogram function.
+    """
+    return block_based_histogram(
+        img_path,
+        compute_histogram_func=dim2.compute_2d_histogram_lab,
+        **kwargs
+    )
+
+def block_based_histogram_2d_hsv(img_path: str, **kwargs):
+    """
+    Compute block-based 2D histograms in the HSV color space.
+
+    This function divides the image into spatial blocks and computes a 2D HSV histogram for each block,
+    concatenating all block histograms into a single high-dimensional descriptor vector.
+
+    Args:
+        img_path (str): Path to the input image file.
+        **kwargs (dict, optional): Additional parameters passed to the 2D histogram computation.
+
+    Returns:
+        tuple[np.ndarray, np.ndarray]:
+            - Concatenated 2D histogram descriptor in the HSV color space.
+            - Bin edges or structure returned by the histogram function.
+    """
+    return block_based_histogram(
+        img_path,
+        compute_histogram_func=dim2.compute_2d_histogram_hsv,
+        **kwargs
+    )
 
 def block_based_histogram_3d_lab(img_path: str, **kwargs):
     """
