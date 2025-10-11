@@ -80,6 +80,22 @@ def spatial_pyramid_histogram(
 
 
 def spatial_pyramid_histogram_lab(img_path: str, **kwargs):
+    """
+    Compute a spatial pyramid histogram descriptor using the Lab color space.
+
+    This function applies the spatial pyramid approach with Lab histograms, 
+    capturing both global and local color information. Each pyramid level 
+    subdivides the image into finer grids and concatenates the block histograms.
+
+    Args:
+        img_path (str): Path to the input image file.
+        **kwargs (dict, optional): Additional parameters passed to the Lab histogram computation.
+
+    Returns:
+        tuple[np.ndarray, np.ndarray]:
+            - Concatenated spatial pyramid histogram descriptor in the Lab color space.
+            - Bin edges or structure returned by the histogram function.
+    """
     return spatial_pyramid_histogram(
         img_path,
         compute_histogram_func=lab.compute_lab_histogram_from_array,
@@ -88,6 +104,23 @@ def spatial_pyramid_histogram_lab(img_path: str, **kwargs):
 
 
 def spatial_pyramid_histogram_hsv(img_path: str, **kwargs):
+    """
+    Compute a spatial pyramid histogram descriptor using the HSV color space.
+
+    This function applies the spatial pyramid approach with HSV histograms, 
+    capturing color and spatial information at multiple scales. 
+    Each pyramid level subdivides the image into smaller grids, 
+    computes histograms for each region, and concatenates them into a single descriptor.
+
+    Args:
+        img_path (str): Path to the input image file.
+        **kwargs (dict, optional): Additional parameters passed to the HSV histogram computation.
+
+    Returns:
+        tuple[np.ndarray, np.ndarray]:
+            - Concatenated spatial pyramid histogram descriptor in the HSV color space.
+            - Bin edges or structure returned by the histogram function.
+    """
     return spatial_pyramid_histogram(
         img_path,
         compute_histogram_func=hsv.compute_hsv_histogram_from_array,
