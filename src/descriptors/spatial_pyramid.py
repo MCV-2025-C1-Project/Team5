@@ -2,7 +2,7 @@ import numpy as np
 
 from src.descriptors.block_histogram import block_based_histogram_from_array
 from src.data.extract import read_image
-from src.descriptors import lab, hsv
+from src.descriptors import lab, hsv, dim2, dim3
 
 
 def spatial_pyramid_histogram_from_array(
@@ -124,5 +124,105 @@ def spatial_pyramid_histogram_hsv(img_path: str, **kwargs):
     return spatial_pyramid_histogram(
         img_path,
         compute_histogram_func=hsv.compute_hsv_histogram_from_array,
+        **kwargs
+    )
+
+def spatial_pyramid_histogram_2d_lab(img_path: str, **kwargs):
+    """
+    Compute a spatial pyramid histogram descriptor using the 2D Lab color space.
+
+    This function applies the spatial pyramid approach using 2D histograms 
+    based on the Lab channels (e.g., a* and b*). Each pyramid level subdivides 
+    the image into smaller grids, computes 2D histograms for each region, 
+    and concatenates them into a single descriptor vector.
+
+    Args:
+        img_path (str): Path to the input image file.
+        **kwargs (dict, optional): Additional parameters passed to the 2D Lab histogram computation.
+
+    Returns:
+        tuple[np.ndarray, np.ndarray]:
+            - Concatenated 2D spatial pyramid histogram descriptor in the Lab color space.
+            - Bin edges or structure returned by the histogram function.
+    """
+    return spatial_pyramid_histogram(
+        img_path,
+        compute_histogram_func=dim2.compute_2d_histogram_lab,
+        **kwargs
+    )
+
+
+def spatial_pyramid_histogram_2d_hsv(img_path: str, **kwargs):
+    """
+    Compute a spatial pyramid histogram descriptor using the 2D HSV color space.
+
+    This function applies the spatial pyramid approach using 2D histograms 
+    based on the HSV channels (e.g., H and S). Each pyramid level subdivides 
+    the image into smaller grids, computes 2D histograms for each region, 
+    and concatenates them into a single descriptor vector.
+
+    Args:
+        img_path (str): Path to the input image file.
+        **kwargs (dict, optional): Additional parameters passed to the 2D HSV histogram computation.
+
+    Returns:
+        tuple[np.ndarray, np.ndarray]:
+            - Concatenated 2D spatial pyramid histogram descriptor in the HSV color space.
+            - Bin edges or structure returned by the histogram function.
+    """
+    return spatial_pyramid_histogram(
+        img_path,
+        compute_histogram_func=dim2.compute_2d_histogram_hsv,
+        **kwargs
+    )
+
+def spatial_pyramid_histogram_3d_lab(img_path: str, **kwargs):
+    """
+    Compute a spatial pyramid histogram descriptor using the 3D Lab color space.
+
+    This function applies the spatial pyramid approach using 3D histograms 
+    that consider all Lab channels jointly (L*, a*, b*). 
+    Each pyramid level subdivides the image into smaller grids, 
+    computes 3D histograms for each region, and concatenates them 
+    into a single, high-dimensional descriptor.
+
+    Args:
+        img_path (str): Path to the input image file.
+        **kwargs (dict, optional): Additional parameters passed to the 3D Lab histogram computation.
+
+    Returns:
+        tuple[np.ndarray, np.ndarray]:
+            - Concatenated 3D spatial pyramid histogram descriptor in the Lab color space.
+            - Bin edges or structure returned by the histogram function.
+    """
+    return spatial_pyramid_histogram(
+        img_path,
+        compute_histogram_func=dim3.compute_3d_histogram_lab_from_array,
+        **kwargs
+    )
+
+
+def spatial_pyramid_histogram_3d_hsv(img_path: str, **kwargs):
+    """
+    Compute a spatial pyramid histogram descriptor using the 3D HSV color space.
+
+    This function applies the spatial pyramid approach using 3D histograms 
+    that consider all HSV channels jointly (H, S, V). 
+    Each pyramid level subdivides the image into smaller grids, 
+    computes 3D histograms for each region, and concatenates them 
+    into a single, high-dimensional descriptor.
+
+    Args:
+        img_path (str): Path to the input image file.
+        **kwargs (dict, optional): Additional parameters passed to the 3D HSV histogram computation.
+
+    Returns:
+        tuple[np.ndarray, np.ndarray]:
+            - Concatenated 3D spatial pyramid histogram descriptor in the HSV color space.
+            - Bin edges or structure returned by the histogram function.
+    """
+    return spatial_pyramid_histogram(
+        img_path,
+        compute_histogram_func=dim3.compute_3d_histogram_hsv_from_array,
         **kwargs
     )
