@@ -75,7 +75,7 @@ def compute_3d_histogram_rgb_from_array(
     Wrapper around :func:`compute_3d_histogram` with ``color_space="rgb"``.
 
     Args:
-        img_path (str): Path to the input image file.
+        img_bgr (np.ndarray): Input image in BGR format.
         **kwargs: Additional keyword arguments passed to
             :func:`compute_3d_histogram`.
 
@@ -92,6 +92,20 @@ def compute_3d_histogram_rgb(
     img_path,
     **kwargs
 ):
+    """Compute a 3D RGB color histogram from an image path.
+
+    Wrapper around :func:`compute_3d_histogram` with ``color_space="rgb"``.
+
+    Args:
+        img_path (str): Path to the input image file.
+        **kwargs: Additional keyword arguments passed to
+            :func:`compute_3d_histogram`.
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray]:
+            - hist: 3D histogram of RGB color frequencies.
+            - bin_edges: Bin edges for each RGB channel.
+    """
     img_bgr = read_image(img_path)
     return compute_3d_histogram_rgb_from_array(img_bgr, **kwargs)
 
@@ -105,7 +119,7 @@ def compute_3d_histogram_lab_from_array(
     Wrapper around :func:`compute_3d_histogram` with ``color_space="lab"``.
 
     Args:
-        img_path (str): Path to the input image file.
+        img_bgr (np.ndarray): Input image in BGR format.
         **kwargs: Additional keyword arguments passed to
             :func:`compute_3d_histogram`.
 
@@ -122,6 +136,20 @@ def compute_3d_histogram_lab(
     img_path,
     **kwargs
 ):
+    """Compute a 3D Lab color histogram from an image path.
+
+    Wrapper around :func:`compute_3d_histogram` with ``color_space="lab"``.
+
+    Args:
+        img_bgr (np.ndarray): Input image in BGR format.
+        **kwargs: Additional keyword arguments passed to
+            :func:`compute_3d_histogram`.
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray]:
+            - hist: 3D histogram of Lab color frequencies.
+            - bin_edges: Bin edges for each Lab channel.
+    """
     img_bgr = read_image(img_path)
     return compute_3d_histogram_lab_from_array(img_bgr, **kwargs)
 
@@ -135,7 +163,7 @@ def compute_3d_histogram_hsv_from_array(
     Wrapper around :func:`compute_3d_histogram` with ``color_space="hsv"``.
 
     Args:
-        img_path (str): Path to the input image file.
+        img_bgr (np.ndarray): Input image in BGR format.
         **kwargs: Additional keyword arguments passed to
             :func:`compute_3d_histogram`.
 
@@ -152,5 +180,19 @@ def compute_3d_histogram_hsv(
     img_path,
     **kwargs
 ):
+    """Compute a 3D HSV color histogram from an image path.
+
+    Wrapper around :func:`compute_3d_histogram` with ``color_space="lab"``.
+
+    Args:
+        img_bgr (np.ndarray): Input image in BGR format.
+        **kwargs: Additional keyword arguments passed to
+            :func:`compute_3d_histogram`.
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray]:
+            - hist: 3D histogram of HSV color frequencies.
+            - bin_edges: Bin edges for each HSV channel.
+    """
     img_bgr = read_image(img_path)
     return compute_3d_histogram_hsv_from_array(img_bgr, **kwargs)

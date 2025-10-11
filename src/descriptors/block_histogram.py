@@ -60,8 +60,20 @@ def block_based_histogram_from_array(
 
             block = img_bgr[row_start:row_end, col_start:col_end]
 
-            hist, bins = compute_histogram_func(
+            result = compute_histogram_func(
                 block, values_per_bin=values_per_bin, **kwargs)
+            
+            # if the function returns 2 values (hist, bins)
+            if len(result) == 2:
+                hist, bins = result
+
+            # if the function returns 4 values (hist_y, bins_y, hist_cbcr, bins_cbcr)
+            elif len(result) == 4:
+                hist_y, bins_y, hist_cbcr, bins_cbcr = result
+                # combine luminance and chrominance histograms into a single feature vector
+                hist = np.concatenate((hist_y.ravel(), hist_cbcr.ravel()))
+                # keep both sets of bin edges for reference
+                bins = (bins_y, bins_cbcr)
             block_histograms.append(hist)
 
     return np.concatenate(block_histograms), bins
@@ -161,7 +173,7 @@ def block_based_histogram_2d_lab(img_path: str, **kwargs):
     """
     return block_based_histogram(
         img_path,
-        compute_histogram_func=dim2.compute_2d_histogram_lab,
+        compute_histogram_func=dim2.compute_2d_histogram_lab_from_array,
         **kwargs
     )
 
@@ -183,7 +195,7 @@ def block_based_histogram_2d_hsv(img_path: str, **kwargs):
     """
     return block_based_histogram(
         img_path,
-        compute_histogram_func=dim2.compute_2d_histogram_hsv,
+        compute_histogram_func=dim2.compute_2d_histogram_hsv_from_array,
         **kwargs
     )
 

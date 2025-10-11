@@ -104,12 +104,12 @@ def compute_2d_histogram(
     """
     img_bgr = read_image(img_path)
 
-    hist_y, _, hist_cbcr, _ = compute_2d_histogram_from_array(
+    hist_y, bin_edges_y, hist_cbcr, bin_edges_cbcr = compute_2d_histogram_from_array(
         img_bgr, **kwargs
     )
     hist = np.concatenate((hist_y.ravel(), hist_cbcr.ravel()))
     hist = hist / np.linalg.norm(hist)
-    return hist, np.array(())
+    return hist, (bin_edges_y, bin_edges_cbcr)
 
 
 # ---------------------------------------------------------------------
@@ -178,3 +178,66 @@ def compute_2d_histogram_hsv(
             - bin_edges: Bin edges for each HSV channel.
     """
     return compute_2d_histogram(img_path, color_space="hsv", **kwargs)
+
+def compute_2d_histogram_ycbcr_from_array(
+    img_bgr: np.ndarray,
+    **kwargs
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Compute a 2D YCbCr color histogram from an image array.
+
+    Wrapper around :func:`compute_2d_histogram_from_array` with ``color_space="ycbcr"``.
+
+    Args:
+        img_bgr (np.ndarray): Input image array in BGR format.
+        **kwargs: Additional keyword arguments passed to
+            :func:`compute_2d_histogram_from_array`.
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray]:
+            - hist: 2D histogram of YCbCr color frequencies.
+            - bin_edges: Bin edges for each YCbCr channel.
+    """
+    return compute_2d_histogram_from_array(img_bgr, color_space="ycbcr", **kwargs)
+
+
+def compute_2d_histogram_lab_from_array(
+    img_bgr: np.ndarray,
+    **kwargs
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Compute a 2D Lab color histogram from an image array.
+
+    Wrapper around :func:`compute_2d_histogram_from_array` with ``color_space="lab"``.
+
+    Args:
+        img_bgr (np.ndarray): Input image array in BGR format.
+        **kwargs: Additional keyword arguments passed to
+            :func:`compute_2d_histogram_from_array`.
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray]:
+            - hist: 2D histogram of Lab color frequencies.
+            - bin_edges: Bin edges for each Lab channel.
+    """
+    return compute_2d_histogram_from_array(img_bgr, color_space="lab", **kwargs)
+
+
+def compute_2d_histogram_hsv_from_array(
+    img_bgr: np.ndarray,
+    **kwargs
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Compute a 2D HSV color histogram from an image array.
+
+    Wrapper around :func:`compute_2d_histogram_from_array` with ``color_space="hsv"``.
+
+    Args:
+        img_bgr (np.ndarray): Input image array in BGR format.
+        **kwargs: Additional keyword arguments passed to
+            :func:`compute_2d_histogram_from_array`.
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray]:
+            - hist: 2D histogram of HSV color frequencies.
+            - bin_edges: Bin edges for each HSV channel.
+    """
+    return compute_2d_histogram_from_array(img_bgr, color_space="hsv", **kwargs)
+

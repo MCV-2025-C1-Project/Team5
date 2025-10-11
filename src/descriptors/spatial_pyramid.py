@@ -147,7 +147,7 @@ def spatial_pyramid_histogram_2d_lab(img_path: str, **kwargs):
     """
     return spatial_pyramid_histogram(
         img_path,
-        compute_histogram_func=dim2.compute_2d_histogram_lab,
+        compute_histogram_func=dim2.compute_2d_histogram_lab_from_array,
         **kwargs
     )
 
@@ -172,7 +172,7 @@ def spatial_pyramid_histogram_2d_hsv(img_path: str, **kwargs):
     """
     return spatial_pyramid_histogram(
         img_path,
-        compute_histogram_func=dim2.compute_2d_histogram_hsv,
+        compute_histogram_func=dim2.compute_2d_histogram_hsv_from_array,
         **kwargs
     )
 
