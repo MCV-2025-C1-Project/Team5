@@ -101,6 +101,21 @@ def block_based_histogram(
 
 
 def block_based_histogram_lab(img_path: str, **kwargs):
+    """
+    Compute block-based histograms using the Lab color space.
+
+    This function divides the image into blocks and computes Lab histograms for each block,
+    concatenating them into a single descriptor vector.
+
+    Args:
+        img_path (str): Path to the input image file.
+        **kwargs (dict, optional): Additional parameters passed to the histogram computation.
+
+    Returns:
+        tuple[np.ndarray, np.ndarray]:
+            - Concatenated 1D histogram descriptor in the Lab color space.
+            - Bin edges or structure returned by the histogram function.
+    """
     return block_based_histogram(
         img_path,
         compute_histogram_func=lab.compute_lab_histogram_from_array,
@@ -109,6 +124,21 @@ def block_based_histogram_lab(img_path: str, **kwargs):
 
 
 def block_based_histogram_hsv(img_path: str, **kwargs):
+    """
+    Compute block-based histograms using the HSV color space.
+
+    This function divides the image into blocks and computes HSV histograms for each block,
+    concatenating them into a single descriptor vector.
+
+    Args:
+        img_path (str): Path to the input image file.
+        **kwargs (dict, optional): Additional parameters passed to the histogram computation.
+
+    Returns:
+        tuple[np.ndarray, np.ndarray]:
+            - Concatenated 1D histogram descriptor in the HSV color space.
+            - Bin edges or structure returned by the histogram function.
+    """
     return block_based_histogram(
         img_path,
         compute_histogram_func=hsv.compute_hsv_histogram_from_array,
@@ -117,6 +147,21 @@ def block_based_histogram_hsv(img_path: str, **kwargs):
 
 
 def block_based_histogram_3d_lab(img_path: str, **kwargs):
+    """
+    Compute block-based 3D histograms in the Lab color space.
+
+    This function divides the image into spatial blocks and computes a 3D Lab histogram for each block,
+    concatenating all block histograms into a single high-dimensional descriptor vector.
+
+    Args:
+        img_path (str): Path to the input image file.
+        **kwargs (dict, optional): Additional parameters passed to the 3D histogram computation.
+
+    Returns:
+        tuple[np.ndarray, np.ndarray]:
+            - Concatenated 3D histogram descriptor in the Lab color space.
+            - Bin edges or structure returned by the histogram function.
+    """
     return block_based_histogram(
         img_path,
         compute_histogram_func=dim3.compute_3d_histogram_lab_from_array,
@@ -125,6 +170,21 @@ def block_based_histogram_3d_lab(img_path: str, **kwargs):
 
 
 def block_based_histogram_3d_hsv(img_path: str, **kwargs):
+    """
+    Compute block-based 3D histograms in the HSV color space.
+
+    This function divides the image into spatial blocks and computes a 3D HSV histogram for each block,
+    concatenating all block histograms into a single high-dimensional descriptor vector.
+
+    Args:
+        img_path (str): Path to the input image file.
+        **kwargs (dict, optional): Additional parameters passed to the 3D histogram computation.
+
+    Returns:
+        tuple[np.ndarray, np.ndarray]:
+            - Concatenated 3D histogram descriptor in the HSV color space.
+            - Bin edges or structure returned by the histogram function.
+    """
     return block_based_histogram(
         img_path,
         compute_histogram_func=dim3.compute_3d_histogram_hsv_from_array,
