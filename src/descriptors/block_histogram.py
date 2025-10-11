@@ -2,7 +2,7 @@ import numpy as np
 from typing import Tuple
 
 from src.data.extract import read_image
-from src.descriptors import lab, hsv
+from src.descriptors import lab, hsv, dim3
 
 
 def block_based_histogram_from_array(
@@ -61,7 +61,7 @@ def block_based_histogram_from_array(
             block = img_bgr[row_start:row_end, col_start:col_end]
 
             hist, bins = compute_histogram_func(
-                block, values_per_bin, **kwargs)
+                block, values_per_bin=values_per_bin, **kwargs)
             block_histograms.append(hist)
 
     return np.concatenate(block_histograms), bins
@@ -112,5 +112,21 @@ def block_based_histogram_hsv(img_path: str, **kwargs):
     return block_based_histogram(
         img_path,
         compute_histogram_func=hsv.compute_hsv_histogram_from_array,
+        **kwargs
+    )
+
+
+def block_based_histogram_3d_lab(img_path: str, **kwargs):
+    return block_based_histogram(
+        img_path,
+        compute_histogram_func=dim3.compute_3d_histogram_lab_from_array,
+        **kwargs
+    )
+
+
+def block_based_histogram_3d_hsv(img_path: str, **kwargs):
+    return block_based_histogram(
+        img_path,
+        compute_histogram_func=dim3.compute_3d_histogram_hsv_from_array,
         **kwargs
     )

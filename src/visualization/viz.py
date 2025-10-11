@@ -29,7 +29,9 @@ DESC_NAME_TO_FUNC = {
     'Spatial_Pyramid_LAB': 'spatial_pyramid_lab',
     'Spatial_Pyramid_HSV': 'spatial_pyramid_hsv',
     'Block_Histogram_LAB': 'block_histogram_lab',
-    'Block_Histogram_HSV': 'block_histogram_hsv'
+    'Block_Histogram_HSV': 'block_histogram_hsv',
+    'Block_Histogram_3D_LAB': 'block_histogram_3d_lab',
+    'Block_Histogram_3D_HSV': 'block_histogram_3d_hsv'
 }
 
 DIST_NAME_TO_FUNC = {

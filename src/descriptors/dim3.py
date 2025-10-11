@@ -13,9 +13,8 @@ from src.descriptors.hsv import convert_img_to_hsv
 
 
 def compute_3d_histogram_from_array(
-    img_bgr: np.ndarray,
+    img: np.ndarray,
     values_per_bin: int = 1,
-    color_space: str = "rgb",
     **kwargs
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Compute a 3D color histogram from an image.
@@ -33,16 +32,6 @@ def compute_3d_histogram_from_array(
             - hist: 3D histogram of color frequencies.
             - bin_edges: Bin edges for each dimension.
     """
-    if color_space.lower() == "rgb":
-        img = convert_img_to_rgb(img_bgr)
-    elif color_space.lower() == "lab":
-        img = convert_img_to_lab(img_bgr)
-    elif color_space.lower() == "hsv":
-        img = convert_img_to_hsv(img_bgr)
-    else:
-        raise ValueError(f"Unsupported color space '{color_space}'. "
-                         "Expected 'rgb', 'lab', or 'hsv'.")
-
     img_flattened = img.reshape(-1, img.shape[2])
 
     hist, bin_edges = compute_histogram(
@@ -53,12 +42,23 @@ def compute_3d_histogram_from_array(
 
 def compute_3d_histogram(
     img_path: str,
+    color_space: str = "rgb",
     **kwargs
 ) -> Tuple[np.ndarray, np.ndarray]:
 
     img_bgr = read_image(img_path)
 
-    return compute_3d_histogram_from_array(img_bgr, **kwargs)
+    if color_space.lower() == "rgb":
+        img = convert_img_to_rgb(img_bgr)
+    elif color_space.lower() == "lab":
+        img = convert_img_to_lab(img_bgr)
+    elif color_space.lower() == "hsv":
+        img = convert_img_to_hsv(img_bgr)
+    else:
+        raise ValueError(f"Unsupported color space '{color_space}'. "
+                         "Expected 'rgb', 'lab', or 'hsv'.")
+
+    return compute_3d_histogram_from_array(img, **kwargs)
 
 
 # ---------------------------------------------------------------------
@@ -66,8 +66,8 @@ def compute_3d_histogram(
 # ---------------------------------------------------------------------
 
 
-def compute_3d_histogram_rgb(
-    img_path: str,
+def compute_3d_histogram_rgb_from_array(
+    img_bgr: np.array,
     **kwargs
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Compute a 3D RGB color histogram from an image.
@@ -84,11 +84,20 @@ def compute_3d_histogram_rgb(
             - hist: 3D histogram of RGB color frequencies.
             - bin_edges: Bin edges for each RGB channel.
     """
-    return compute_3d_histogram(img_path, color_space="rgb", **kwargs)
+    img = convert_img_to_rgb(img_bgr)
+    return compute_3d_histogram_from_array(img, **kwargs)
 
 
-def compute_3d_histogram_lab(
-    img_path: str,
+def compute_3d_histogram_rgb(
+    img_path,
+    **kwargs
+):
+    img_bgr = read_image(img_path)
+    return compute_3d_histogram_rgb_from_array(img_bgr, **kwargs)
+
+
+def compute_3d_histogram_lab_from_array(
+    img_bgr: np.array,
     **kwargs
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Compute a 3D Lab color histogram from an image.
@@ -105,11 +114,20 @@ def compute_3d_histogram_lab(
             - hist: 3D histogram of Lab color frequencies.
             - bin_edges: Bin edges for each Lab channel.
     """
-    return compute_3d_histogram(img_path, color_space="lab", **kwargs)
+    img = convert_img_to_lab(img_bgr)
+    return compute_3d_histogram_from_array(img, **kwargs)
 
 
-def compute_3d_histogram_hsv(
-    img_path: str,
+def compute_3d_histogram_lab(
+    img_path,
+    **kwargs
+):
+    img_bgr = read_image(img_path)
+    return compute_3d_histogram_lab_from_array(img_bgr, **kwargs)
+
+
+def compute_3d_histogram_hsv_from_array(
+    img_bgr: np.array,
     **kwargs
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Compute a 3D HSV color histogram from an image.
@@ -126,4 +144,13 @@ def compute_3d_histogram_hsv(
             - hist: 3D histogram of HSV color frequencies.
             - bin_edges: Bin edges for each HSV channel.
     """
-    return compute_3d_histogram(img_path, color_space="hsv", **kwargs)
+    img = convert_img_to_hsv(img_bgr)
+    return compute_3d_histogram_from_array(img, **kwargs)
+
+
+def compute_3d_histogram_hsv(
+    img_path,
+    **kwargs
+):
+    img_bgr = read_image(img_path)
+    return compute_3d_histogram_hsv_from_array(img_bgr, **kwargs)

@@ -21,6 +21,7 @@ def convert_img_to_lab(img_bgr: np.ndarray) -> np.ndarray:
     img_lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
     return img_lab
 
+
 def compute_lab_histogram_from_array(
     img_bgr: np.ndarray,
     values_per_bin: int = 1
@@ -75,4 +76,4 @@ def compute_lab_histogram(
     """
     img = read_image(img_path)
 
-    return compute_lab_histogram_from_array(img, values_per_bin) 
+    return compute_lab_histogram_from_array(img, values_per_bin)
