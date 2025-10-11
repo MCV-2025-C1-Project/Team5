@@ -18,7 +18,10 @@ ALL_DESCRIPTORS = [
     '3d_rgb',
     '3d_hsv',
     '3d_lab',
-    '2d_ycbcr']
+    '2d_ycbcr',
+    'spatial_pyramid',
+    'block_histogram'
+]
 
 ALL_DISTANCE_METRICS = [
     'euclidean.euclidean_distance',
@@ -42,7 +45,9 @@ DESCRIPTOR_NAMES = {
     '3d_rgb': '3D_RGB',
     '3d_hsv': '3D_HSV',
     '3d_lab': '3D_LAB',
-    '2d_ycbcr': '2D_YCbCr'
+    '2d_ycbcr': '2D_YCbCr',
+    'spatial_pyramid': 'Spatial_Pyramid',
+    'block_histogram': 'Block_Histogram'
 }
 
 DISTANCE_NAMES = {

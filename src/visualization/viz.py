@@ -20,7 +20,9 @@ DESC_NAME_TO_FUNC = {
     '3D_RGB': '3d_rgb',
     '3D_HSV': '3d_hsv',
     '3D_LAB': '3d_lab',
-    '2D_YCbCr': '2d_ycbcr'
+    '2D_YCbCr': '2d_ycbcr',
+    'Spatial_Pyramid': 'spatial_pyramid',
+    'Block_Histogram': 'block_histogram'
 }
 
 DIST_NAME_TO_FUNC = {

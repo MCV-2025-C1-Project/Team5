@@ -8,7 +8,9 @@ from src.descriptors import (grayscale,
                              rgb,
                              ycbcr,
                              dim2,
-                             dim3)
+                             dim3,
+                             spatial_pyramid,
+                             block_histogram)
 from src.distances import (bhattacharyya,
                            canberra,
                            chi_2,
@@ -46,7 +48,9 @@ DESCRIPTOR_FUNCTIONS = {
     '3d_rgb': dim3.compute_3d_histogram_rgb,
     '3d_hsv': dim3.compute_3d_histogram_hsv,
     '3d_lab': dim3.compute_3d_histogram_lab,
-    '2d_ycbcr': dim2.compute_2d_histogram
+    '2d_ycbcr': dim2.compute_2d_histogram,
+    'spatial_pyramid': spatial_pyramid.spatial_pyramid_histogram,
+    'block_histogram': block_histogram.block_based_histrogram
 }
 
 
@@ -93,7 +97,7 @@ class ComputeImageHistogram:
         descriptor_func = DESCRIPTOR_FUNCTIONS[self.descriptor_type]
 
         for img_path in tqdm(self.museum_images):
-            hist = descriptor_func(
+            hist, _ = descriptor_func(
                 str(img_path), values_per_bin=self.values_per_bin)
             # Ensure histogram is a numpy array, not a tuple
             if isinstance(hist, tuple):
@@ -104,7 +108,7 @@ class ComputeImageHistogram:
     def retrieve(self, query_image_path: str, k: int = 5):
         """Retrieve top-k similar images."""
         descriptor_func = DESCRIPTOR_FUNCTIONS[self.descriptor_type]
-        query_hist = descriptor_func(
+        query_hist, _ = descriptor_func(
             query_image_path, values_per_bin=self.values_per_bin)
 
         # Ensure histogram is a numpy array, not a tuple
