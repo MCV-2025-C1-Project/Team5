@@ -17,26 +17,19 @@ def block_based_histogram_from_array(
     This function implements the block-based histogram strategy to add spatial
     information to a feature descriptor.
 
-    Parameters
-    ----------
-    img_bgr : np.ndarray
-        Input image array in BGR format.
-    compute_histogram_func : callable
-        A function that takes an image region (a block) and returns its
-        histogram descriptor as a 1D numpy.ndarray.
-    values_per_bin : int, optional
-        Number of intensity values per bin. Defaults to 1.
-    grid_size : tuple of (int, int), optional
-        A tuple (rows, cols) defining the number of blocks to divide the
-        image into. Defaults to (4, 4).
-    **kwargs : dict, optional
-        Additional keyword arguments to pass to compute_histogram_func.
+    Args:
+        img_bgr (np.ndarray): Input image array in BGR format.
+        compute_histogram_func (callable): A function that takes an image region (a block) and returns its
+            histogram descriptor as a 1D numpy.ndarray.
+        values_per_bin (int, optional): Number of intensity values per bin. Defaults to 1.
+        grid_size (tuple of (int, int), optional): A tuple (rows, cols) defining the number of blocks to divide the
+            A tuple (rows, cols) defining the number of blocks to divide the
+            image into. Defaults to (4, 4).
+        **kwargs (dict, optional): Additional keyword arguments to pass to compute_histogram_func.
 
-    Returns
-    -------
-    numpy.ndarray
-        A single 1D feature vector representing the concatenation of all
-        block histograms, ordered from left-to-right, top-to-bottom.
+    Returns:
+        numpy.ndarray: A single 1D feature vector representing the concatenation of all
+            block histograms, ordered from left-to-right, top-to-bottom.
     """
     # Get the dimensions of the image
     h, w = img_bgr.shape[:2]
@@ -85,26 +78,18 @@ def block_based_histogram(
     This function implements the block-based histogram strategy to add spatial
     information to a feature descriptor.
 
-    Parameters
-    ----------
-    img_path : str
-        Path to the input image file.
-    compute_histogram_func : callable
-        A function that takes an image region (a block) and returns its
-        histogram descriptor as a 1D numpy.ndarray.
-    values_per_bin : int, optional
-        Number of intensity values per bin. Defaults to 1.
-    grid_size : tuple of (int, int), optional
-        A tuple (rows, cols) defining the number of blocks to divide the
-        image into. Defaults to (4, 4).
-    **kwargs : dict, optional
-        Additional keyword arguments to pass to compute_histogram_func.
+    Args:
+        img_path (str): Path to the input image file.
+        compute_histogram_func (callable): A function that takes an image region (a block) and returns its
+            histogram descriptor as a 1D numpy.ndarray.
+        values_per_bin (int, optional): Number of intensity values per bin. Defaults to 1.
+        grid_size (tuple of (int, int), optional): A tuple (rows, cols) defining the number of blocks to divide the
+            image into. Defaults to (4, 4).
+        **kwargs (dict, optional): Additional keyword arguments to pass to compute_histogram_func.
 
-    Returns
-    -------
-    numpy.ndarray
-        A single 1D feature vector representing the concatenation of all
-        block histograms, ordered from left-to-right, top-to-bottom.
+    Returns:
+        numpy.ndarray: A single 1D feature vector representing the concatenation of all
+            spatial block histograms, ordered from left-to-right, top-to-bottom.
     """
     img_bgr = read_image(img_path)
     

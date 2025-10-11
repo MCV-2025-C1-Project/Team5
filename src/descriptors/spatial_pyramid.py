@@ -18,24 +18,16 @@ def spatial_pyramid_histogram_from_array(
     This function calls the block_based_histogram_from_array function for different 
     grid sizes corresponding to pyramid levels and concatenates the results.
 
-    Parameters
-    ----------
-    img_bgr : np.ndarray
-        Input image array in BGR format.
-    compute_histogram_func : callable
-        The histogram computation function to be passed down.
-    levels : int, optional
-        The number of levels in the pyramid. `levels=3` will compute descriptors
-        for 1x1, 2x2, and 4x4 grids. Defaults to 3.
-    values_per_bin : int, optional
-        The number of intensity values per bin. Defaults to 1.
-    **kwargs : dict, optional
-        Additional keyword arguments to pass to compute_histogram_func.
+    Args:
+        img_bgr (np.ndarray): Input image array in BGR format.
+        compute_histogram_func (callable): The histogram computation function to be passed down.
+            levels (int, optional): The number of levels in the pyramid. `levels=3` will compute descriptors
+            for 1x1, 2x2, and 4x4 grids. Defaults to 3.
+        values_per_bin (int, optional): The number of intensity values per bin. Defaults to 1.
+        **kwargs (dict, optional): Additional keyword arguments to pass to compute_histogram_func.
 
-    Returns
-    -------
-    numpy.ndarray
-        A single 1D feature vector for the entire spatial pyramid.
+    Returns:
+        numpy.ndarray: A single 1D feature vector for the entire spatial pyramid.
     """
     pyramid_descriptors = []
 
@@ -68,24 +60,16 @@ def spatial_pyramid_histogram(
     This function calls the block_based_histogram function for different grid
     sizes corresponding to pyramid levels and concatenates the results.
 
-    Parameters
-    ----------
-    img_path : str
-        Path to the input image file.
-    compute_histogram_func : callable
-        The histogram computation function to be passed down.
-    levels : int, optional
-        The number of levels in the pyramid. `levels=3` will compute descriptors
-        for 1x1, 2x2, and 4x4 grids. Defaults to 3.
-    values_per_bin : int, optional
-        The number of intensity values per bin. Defaults to 1.
-    **kwargs : dict, optional
-        Additional keyword arguments to pass to compute_histogram_func.
+    Args:
+        img_path (str): Path to the input image file.
+        compute_histogram_func (callable): The histogram computation function to be passed down.
+        levels (int, optional): The number of levels in the pyramid. `levels=3` will compute descriptors
+            for 1x1, 2x2, and 4x4 grids. Defaults to 3.
+        values_per_bin (int, optional): The number of intensity values per bin. Defaults to 1.
+        **kwargs (dict, optional): Additional keyword arguments to pass to compute_histogram_func.
 
-    Returns
-    -------
-    numpy.ndarray
-        A single 1D feature vector for the entire spatial pyramid.
+    Returns:
+        numpy.ndarray: A single 1D feature vector for the entire spatial pyramid.
     """
     img_bgr = read_image(img_path)
     
