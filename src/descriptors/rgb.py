@@ -21,6 +21,41 @@ def convert_img_to_rgb(img_bgr: np.ndarray) -> np.ndarray:
     img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
     return img_rgb
 
+def compute_rgb_histogram_from_array(
+    img_bgr: np.ndarray,
+    values_per_bin: int = 1,
+    **kwargs
+) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Compute RGB concatenated histogram from image array.
+
+    Args:
+        img_bgr: Input image array in BGR format.
+        values_per_bin: Number of intensity values per bin.
+
+    Returns:
+        concat_hist : Concatenated histogram (R | G | B), each channel with bins
+            depending on values_per_bin.
+        bin_edges : Bin edges for the histograms (all channels share the same
+            edges).
+    """
+    # Split channels (OpenCV uses BGR order)
+    b_channel = img_bgr[:, :, 0]
+    g_channel = img_bgr[:, :, 1]
+    r_channel = img_bgr[:, :, 2]
+
+    # Compute histogram for each channel
+    hist_b, bin_edges = compute_histogram(
+        b_channel, values_per_bin=values_per_bin, **kwargs)
+    hist_g, _ = compute_histogram(
+        g_channel, values_per_bin=values_per_bin, **kwargs)
+    hist_r, _ = compute_histogram(
+        r_channel, values_per_bin=values_per_bin, **kwargs)
+
+    # Concatenate in RGB order (not BGR)
+    concat_hist = np.concatenate([hist_r, hist_g, hist_b])
+
+    return concat_hist, bin_edges
 
 def compute_rgb_histogram(
     img_path: str,
@@ -42,20 +77,6 @@ def compute_rgb_histogram(
     """
     img_bgr = read_image(img_path)
 
-    # Split channels (OpenCV uses BGR order)
-    b_channel = img_bgr[:, :, 0]
-    g_channel = img_bgr[:, :, 1]
-    r_channel = img_bgr[:, :, 2]
+    return compute_rgb_histogram_from_array(img_bgr, values_per_bin, **kwargs)
 
-    # Compute histogram for each channel
-    hist_b, bin_edges = compute_histogram(
-        b_channel, values_per_bin=values_per_bin, **kwargs)
-    hist_g, _ = compute_histogram(
-        g_channel, values_per_bin=values_per_bin, **kwargs)
-    hist_r, _ = compute_histogram(
-        r_channel, values_per_bin=values_per_bin, **kwargs)
-
-    # Concatenate in RGB order (not BGR)
-    concat_hist = np.concatenate([hist_r, hist_g, hist_b])
-
-    return concat_hist, bin_edges
+    

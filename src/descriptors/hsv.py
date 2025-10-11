@@ -22,6 +22,40 @@ def convert_img_to_hsv(img_bgr: np.ndarray) -> np.ndarray:
     return cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
 
 
+def compute_hsv_histogram_from_array(
+    img_bgr: np.ndarray,
+    values_per_bin: int = 1
+) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Compute HSV concatenated histogram from image array, scaling H to 0-255 so
+    all channels share the same bin edges.
+
+    Args:
+        img_bgr: Input image array in BGR format.
+        values_per_bin: Number of intensity values per bin.
+
+    Returns:
+        hist_concat: Concatenated histogram [H | S | V] (length 3*N).
+        bin_edges: Shared bin edges (length N+1).
+    """
+    img_hsv = convert_img_to_hsv(img_bgr)       # HSV
+
+    h = img_hsv[:, :, 0]
+    s = img_hsv[:, :, 1]
+    v = img_hsv[:, :, 2]
+
+    hist_h, bin_edges = compute_histogram(
+        h, values_per_bin=values_per_bin, density=True)
+    hist_s, _ = compute_histogram(
+        s, values_per_bin=values_per_bin, density=True)
+    hist_v, _ = compute_histogram(
+        v, values_per_bin=values_per_bin, density=True)
+
+    hist_concat = np.concatenate([hist_h, hist_s, hist_v])
+
+    return hist_concat, bin_edges
+
+
 def compute_hsv_histogram(
     img_path: str,
     values_per_bin: int = 1
@@ -38,20 +72,6 @@ def compute_hsv_histogram(
         hist_concat: Concatenated histogram [H | S | V] (length 3*N).
         bin_edges: Shared bin edges (length N+1).
     """
-    img = read_image(img_path)              # BGR
-    img_hsv = convert_img_to_hsv(img)       # HSV
+    img = read_image(img_path)
 
-    h = img_hsv[:, :, 0]
-    s = img_hsv[:, :, 1]
-    v = img_hsv[:, :, 2]
-
-    hist_h, bin_edges = compute_histogram(
-        h, values_per_bin=values_per_bin, density=True)
-    hist_s, _ = compute_histogram(
-        s, values_per_bin=values_per_bin, density=True)
-    hist_v, _ = compute_histogram(
-        v, values_per_bin=values_per_bin, density=True)
-
-    hist_concat = np.concatenate([hist_h, hist_s, hist_v])
-
-    return hist_concat, bin_edges
+    return compute_hsv_histogram_from_array(img, values_per_bin)

@@ -21,26 +21,23 @@ def convert_img_to_lab(img_bgr: np.ndarray) -> np.ndarray:
     img_lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
     return img_lab
 
-
-def compute_lab_histogram(
-    img_path: str,
+def compute_lab_histogram_from_array(
+    img_bgr: np.ndarray,
     values_per_bin: int = 1
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
-    Compute LAB concatenated histogram from image path.
+    Compute LAB concatenated histogram from image array.
 
     Args:
-        img_path: Path to the image file.
+        img_bgr: Input image array in BGR format.
         values_per_bin: Number of intensity values per bin.
 
     Returns:
         concat_hist: Normalized concatenated LAB histogram.
         bin_edges : Bin edges for the histograms (all channels share the same edges).
     """
-    img = read_image(img_path)
-
     # Convert BGR to LAB
-    img_lab = convert_img_to_lab(img)
+    img_lab = convert_img_to_lab(img_bgr)
 
     # Split channels (OpenCV uses BGR order)
     l_channel = img_lab[:, :, 0]
@@ -59,3 +56,23 @@ def compute_lab_histogram(
     concat_hist = np.concatenate([hist_l, hist_a, hist_b])
 
     return concat_hist, bin_edges
+
+
+def compute_lab_histogram(
+    img_path: str,
+    values_per_bin: int = 1
+) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Compute LAB concatenated histogram from image path.
+
+    Args:
+        img_path: Path to the image file.
+        values_per_bin: Number of intensity values per bin.
+
+    Returns:
+        concat_hist: Normalized concatenated LAB histogram.
+        bin_edges : Bin edges for the histograms (all channels share the same edges).
+    """
+    img = read_image(img_path)
+
+    return compute_lab_histogram_from_array(img, values_per_bin) 

@@ -22,6 +22,28 @@ def convert_img_to_gray_scale(img: np.ndarray) -> np.ndarray:
     return img_gray
 
 
+def compute_grayscale_histogram_from_array(
+    img_bgr: np.ndarray,
+    values_per_bin: int = 1
+) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Compute grayscale histogram from image array.
+
+    Args:
+        img_bgr: Input image array in BGR format.
+        values_per_bin: Number of intensity values per bin.
+
+    Returns:
+        hist: Normalized histogram.
+        bin_edges: Bin edges for the histogram.
+    """
+    img_gray = convert_img_to_gray_scale(img_bgr)
+    hist, bin_edges = compute_histogram(
+        img_gray, values_per_bin=values_per_bin, density=True)
+
+    return hist, bin_edges
+
+
 def compute_grayscale_histogram(
     img_path: str,
     values_per_bin: int = 1
@@ -34,12 +56,9 @@ def compute_grayscale_histogram(
         values_per_bin: Number of intensity values per bin.
 
     Returns:
-        hist: normalized_histogram 
-        bin_edges : Bin edges for the histogram
+        hist: Normalized histogram.
+        bin_edges: Bin edges for the histogram.
     """
     img = read_image(img_path)
-    img_gray = convert_img_to_gray_scale(img)
-    hist, bin_edges = compute_histogram(
-        img_gray, values_per_bin=values_per_bin, density=True)
 
-    return hist, bin_edges
+    return compute_grayscale_histogram_from_array(img, values_per_bin)
