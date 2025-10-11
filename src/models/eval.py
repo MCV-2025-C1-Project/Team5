@@ -19,8 +19,12 @@ ALL_DESCRIPTORS = [
     '3d_hsv',
     '3d_lab',
     '2d_ycbcr',
-    'spatial_pyramid',
-    'block_histogram'
+    '2d_lab',
+    '2d_hsv',
+    'spatial_pyramid_lab',
+    'spatial_pyramid_hsv',
+    'block_histogram_lab',
+    'block_histogram_hsv'
 ]
 
 ALL_DISTANCE_METRICS = [
@@ -46,8 +50,12 @@ DESCRIPTOR_NAMES = {
     '3d_hsv': '3D_HSV',
     '3d_lab': '3D_LAB',
     '2d_ycbcr': '2D_YCbCr',
-    'spatial_pyramid': 'Spatial_Pyramid',
-    'block_histogram': 'Block_Histogram'
+    '2d_lab': '2D_LAB',
+    '2d_hsv': '2D_HSV',
+    'spatial_pyramid_lab': 'Spatial_Pyramid_LAB',
+    'spatial_pyramid_hsv': 'Spatial_Pyramid_HSV',
+    'block_histogram_lab': 'Block_Histogram_LAB',
+    'block_histogram_hsv': 'Block_Histogram_HSV'
 }
 
 DISTANCE_NAMES = {

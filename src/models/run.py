@@ -60,7 +60,10 @@ def main():
         type=str,
         nargs='+',
         default=None,
-        choices=['rgb', 'hsv', 'ycbcr', 'lab', 'grayscale'],
+        choices=['rgb', 'hsv', 'ycbcr', 'lab', 'grayscale', 'hsv', 'lab',
+                 '3d_rgb', '3d_hsv', '3d_lab', '2d_ycbcr', '2d_lab', '2d_hsv',
+                 'spatial_pyramid_lab', 'spatial_pyramid_hsv',
+                 'block_histogram_lab', 'block_histogram_hsv'],
         help='Specific descriptors to evaluate (default: all). Multiple allowed.'
     )
 

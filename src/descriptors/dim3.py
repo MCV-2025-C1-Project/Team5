@@ -12,8 +12,8 @@ from src.descriptors.lab import convert_img_to_lab
 from src.descriptors.hsv import convert_img_to_hsv
 
 
-def compute_3d_histogram(
-    img_path: str,
+def compute_3d_histogram_from_array(
+    img_bgr: np.ndarray,
     values_per_bin: int = 1,
     color_space: str = "rgb",
     **kwargs
@@ -21,7 +21,7 @@ def compute_3d_histogram(
     """Compute a 3D color histogram from an image.
 
     Args:
-        img_path (str): Path to the input image file.
+        img_bgr: (np.ndarray): Input image in BGR format.
         values_per_bin (int, optional): Number of intensity values per bin.
             Smaller values yield finer granularity. Defaults to 1.
         color_space (str, optional): Color space to use for the histogram.
@@ -33,8 +33,6 @@ def compute_3d_histogram(
             - hist: 3D histogram of color frequencies.
             - bin_edges: Bin edges for each dimension.
     """
-    img_bgr = read_image(img_path)
-
     if color_space.lower() == "rgb":
         img = convert_img_to_rgb(img_bgr)
     elif color_space.lower() == "lab":
@@ -51,6 +49,16 @@ def compute_3d_histogram(
         img_flattened, values_per_bin=values_per_bin, dimension=3, **kwargs)
 
     return hist, bin_edges
+
+
+def compute_3d_histogram(
+    img_path: str,
+    **kwargs
+) -> Tuple[np.ndarray, np.ndarray]:
+
+    img_bgr = read_image(img_path)
+
+    return compute_3d_histogram_from_array(img_bgr, **kwargs)
 
 
 # ---------------------------------------------------------------------

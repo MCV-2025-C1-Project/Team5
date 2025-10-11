@@ -24,7 +24,9 @@ DESCRIPTORS = {
     '3d_rgb':    (dim3.compute_3d_histogram_rgb,         {"values_per_bin": 1}),
     '3d_hsv':    (dim3.compute_3d_histogram_hsv,         {"values_per_bin": 1}),
     '3d_lab':    (dim3.compute_3d_histogram_lab,         {"values_per_bin": 1}),
-    '2d_ycbcr':  (dim2.compute_2d_histogram,             {"values_per_bin": 1}),
+    '2d_ycbcr':  (dim2.compute_2d_histogram_ycbcr,       {"values_per_bin": 1}),
+    '2d_lab':  (dim2.compute_2d_histogram_lab,           {"values_per_bin": 1}),
+    '2d_hsv':  (dim2.compute_2d_histogram_hsv,           {"values_per_bin": 1}),
 }
 
 # Only process real images (ignore .png masks & metadata) IMG_EXTS = (".jpg", ".jpeg")
@@ -87,7 +89,7 @@ def main():
     )
     ap.add_argument("--descriptor", required=True, choices=DESCRIPTORS.keys(),
                     help="Which descriptor to run: grayscale | hsv | lab | rgb "
-                         "| ycbcr | 2d_ycbcr | 3d_rgb | 3d_hsv | 3d_lab")
+                         "| ycbcr | 2d_ycbcr | 2d_lab | 2d_hsv | 3d_rgb | 3d_hsv | 3d_lab")
     ap.add_argument("--input", required=True,
                     help="Folder with images (BBDD, QSD1, QST1)")
     ap.add_argument("--outdir", default="data/descriptors",

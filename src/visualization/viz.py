@@ -1,9 +1,12 @@
-import numpy as np
 from pathlib import Path
-from typing import List
-import matplotlib.pyplot as plt
 import pickle
+from typing import List
+
+import matplotlib.pyplot as plt
+import numpy as np
 from PIL import Image
+from sklearn.metrics import confusion_matrix
+import seaborn as sns
 
 from src.models.eval import evaluate_all_descriptors_and_distances
 from src.models.main import ComputeImageHistogram
@@ -21,8 +24,12 @@ DESC_NAME_TO_FUNC = {
     '3D_HSV': '3d_hsv',
     '3D_LAB': '3d_lab',
     '2D_YCbCr': '2d_ycbcr',
-    'Spatial_Pyramid': 'spatial_pyramid',
-    'Block_Histogram': 'block_histogram'
+    '2D_LAB': '2d_lab',
+    '2D_HSV': '2d_hsv',
+    'Spatial_Pyramid_LAB': 'spatial_pyramid_lab',
+    'Spatial_Pyramid_HSV': 'spatial_pyramid_hsv',
+    'Block_Histogram_LAB': 'block_histogram_lab',
+    'Block_Histogram_HSV': 'block_histogram_hsv'
 }
 
 DIST_NAME_TO_FUNC = {
@@ -258,8 +265,6 @@ def generate_comprehensive_analysis(
 
     # Create and save confusion matrices
     logger.info("Creating confusion matrices...")
-    from sklearn.metrics import confusion_matrix
-    import seaborn as sns
 
     # Get unique labels for confusion matrix
     unique_labels = sorted(list(set(gt_labels + predictions)))

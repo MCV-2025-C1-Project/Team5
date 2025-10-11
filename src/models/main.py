@@ -48,9 +48,13 @@ DESCRIPTOR_FUNCTIONS = {
     '3d_rgb': dim3.compute_3d_histogram_rgb,
     '3d_hsv': dim3.compute_3d_histogram_hsv,
     '3d_lab': dim3.compute_3d_histogram_lab,
-    '2d_ycbcr': dim2.compute_2d_histogram,
-    'spatial_pyramid': spatial_pyramid.spatial_pyramid_histogram,
-    'block_histogram': block_histogram.block_based_histogram
+    '2d_ycbcr': dim2.compute_2d_histogram_ycbcr,
+    '2d_lab': dim2.compute_2d_histogram_lab,
+    '2d_hsv': dim2.compute_2d_histogram_hsv,
+    'spatial_pyramid_lab': spatial_pyramid.spatial_pyramid_histogram_lab,
+    'spatial_pyramid_hsv': spatial_pyramid.spatial_pyramid_histogram_hsv,
+    'block_histogram_lab': block_histogram.block_based_histogram_lab,
+    'block_histogram_hsv': block_histogram.block_based_histogram_hsv
 }
 
 

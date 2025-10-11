@@ -2,15 +2,16 @@ import numpy as np
 from typing import Tuple
 
 from src.data.extract import read_image
+from src.descriptors import lab, hsv
 
 
 def block_based_histogram_from_array(
-        img_bgr: np.ndarray,
-        compute_histogram_func,
-        values_per_bin: int = 1,
-        grid_size: Tuple[int, int] = (4, 4),
-        **kwargs
-    ) -> np.ndarray:
+    img_bgr: np.ndarray,
+    compute_histogram_func,
+    values_per_bin: int = 1,
+    grid_size: Tuple[int, int] = (4, 4),
+    **kwargs
+) -> np.ndarray:
     """
     Divide an image array into a grid and concatenate histograms from each block.
 
@@ -59,19 +60,20 @@ def block_based_histogram_from_array(
 
             block = img_bgr[row_start:row_end, col_start:col_end]
 
-            hist, _ = compute_histogram_func(block, values_per_bin, **kwargs)
+            hist, bins = compute_histogram_func(
+                block, values_per_bin, **kwargs)
             block_histograms.append(hist)
-    
-    return np.concatenate(block_histograms)
+
+    return np.concatenate(block_histograms), bins
 
 
-def block_based_histogram(
-        img_path: str,
-        compute_histogram_func,
-        values_per_bin: int = 1,
-        grid_size: Tuple[int, int] = (4, 4),
-        **kwargs
-    ) -> np.ndarray:
+def block_based_histrogram(
+    img_path: str,
+    compute_histogram_func,
+    values_per_bin: int = 1,
+    grid_size: Tuple[int, int] = (4, 4),
+    **kwargs
+) -> np.ndarray:
     """
     Divide an image into a grid and concatenate histograms from each block.
 
@@ -92,7 +94,23 @@ def block_based_histogram(
             spatial block histograms, ordered from left-to-right, top-to-bottom.
     """
     img_bgr = read_image(img_path)
-    
+
     return block_based_histogram_from_array(
         img_bgr, compute_histogram_func, values_per_bin, grid_size, **kwargs
+    )
+
+
+def block_based_histogram_lab(img_path: str, **kwargs):
+    return block_based_histogram(
+        img_path,
+        compute_histogram_func=lab.compute_lab_histogram_from_array,
+        **kwargs
+    )
+
+
+def block_based_histogram_hsv(img_path: str, **kwargs):
+    return block_based_histogram(
+        img_path,
+        compute_histogram_func=hsv.compute_hsv_histogram_from_array,
+        **kwargs
     )

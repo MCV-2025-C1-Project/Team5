@@ -2,6 +2,7 @@ import numpy as np
 
 from src.descriptors.block_histogram import block_based_histogram_from_array
 from src.data.extract import read_image
+from src.descriptors import lab, hsv
 
 
 def spatial_pyramid_histogram_from_array(
@@ -35,7 +36,7 @@ def spatial_pyramid_histogram_from_array(
         grid_dim = 2**level
         grid_size = (grid_dim, grid_dim)
 
-        level_descriptor = block_based_histogram_from_array(
+        level_descriptor, bins = block_based_histogram_from_array(
             img_bgr=img_bgr,
             compute_histogram_func=compute_histogram_func,
             values_per_bin=values_per_bin,
@@ -43,8 +44,8 @@ def spatial_pyramid_histogram_from_array(
             **kwargs
         )
         pyramid_descriptors.append(level_descriptor)
-    
-    return np.concatenate(pyramid_descriptors)
+
+    return np.concatenate(pyramid_descriptors), bins
 
 
 def spatial_pyramid_histogram(
@@ -72,7 +73,23 @@ def spatial_pyramid_histogram(
         numpy.ndarray: A single 1D feature vector for the entire spatial pyramid.
     """
     img_bgr = read_image(img_path)
-    
+
     return spatial_pyramid_histogram_from_array(
         img_bgr, compute_histogram_func, levels, values_per_bin, **kwargs
+    )
+
+
+def spatial_pyramid_histogram_lab(img_path: str, **kwargs):
+    return spatial_pyramid_histogram(
+        img_path,
+        compute_histogram_func=lab.compute_lab_histogram_from_array,
+        **kwargs
+    )
+
+
+def spatial_pyramid_histogram_hsv(img_path: str, **kwargs):
+    return spatial_pyramid_histogram(
+        img_path,
+        compute_histogram_func=hsv.compute_hsv_histogram_from_array,
+        **kwargs
     )
