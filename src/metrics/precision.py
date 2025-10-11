@@ -7,20 +7,13 @@ def apk(actual, predicted, k=10):
     This function computes the average prescision at k between two lists of
     items.
 
-    Parameters
-    ----------
-    actual : list
-             A list of elements that are to be predicted (order doesn't matter)
-    predicted : list
-                A list of predicted elements (order does matter)
-    k : int, optional
-        The maximum number of predicted elements
+    Args:
+        actual (list): A list of elements that are to be predicted (order doesn't matter)
+        predicted (list): A list of predicted elements (order does matter)
+        k (int, optional): The maximum number of predicted elements
 
-    Returns
-    -------
-    score : double
-            The average precision at k over the input lists
-
+    Returns:
+        score (float): The average precision at k over the input lists
     """
     if len(predicted)>k:
         predicted = predicted[:k]
@@ -45,21 +38,14 @@ def mapk(actual, predicted, k=10):
     This function computes the mean average prescision at k between two lists
     of lists of items.
 
-    Parameters
-    ----------
-    actual : list
-             A list of lists of elements that are to be predicted 
-             (order doesn't matter in the lists)
-    predicted : list
-                A list of lists of predicted elements
-                (order matters in the lists)
-    k : int, optional
-        The maximum number of predicted elements
+    Args:
+        actual (list): A list of lists of elements that are to be predicted
+            (order doesn't matter in the lists)
+        predicted (list): A list of lists of predicted elements
+            (order matters in the lists)
+        k (int, optional): The maximum number of predicted elements
 
-    Returns
-    -------
-    score : double
-            The mean average precision at k over the input lists
-
+    Returns:
+        score (float): The mean average precision at k over the input lists
     """
     return np.mean([apk(a,p,k) for a,p in zip(actual, predicted)])
