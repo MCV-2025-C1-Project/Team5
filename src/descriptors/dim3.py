@@ -37,13 +37,10 @@ def compute_3d_histogram(
 
     if color_space.lower() == "rgb":
         img = convert_img_to_rgb(img_bgr)
-
     elif color_space.lower() == "lab":
         img = convert_img_to_lab(img_bgr)
-
     elif color_space.lower() == "hsv":
         img = convert_img_to_hsv(img_bgr)
-
     else:
         raise ValueError(f"Unsupported color space '{color_space}'. "
                          "Expected 'rgb', 'lab', or 'hsv'.")
@@ -54,3 +51,71 @@ def compute_3d_histogram(
         img_flattened, values_per_bin=values_per_bin, dimension=3, **kwargs)
 
     return hist, bin_edges
+
+
+# ---------------------------------------------------------------------
+# Wrapper functions
+# ---------------------------------------------------------------------
+
+
+def compute_3d_histogram_rgb(
+    img_path: str,
+    **kwargs
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Compute a 3D RGB color histogram from an image.
+
+    Wrapper around :func:`compute_3d_histogram` with ``color_space="rgb"``.
+
+    Args:
+        img_path (str): Path to the input image file.
+        **kwargs: Additional keyword arguments passed to
+            :func:`compute_3d_histogram`.
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray]:
+            - hist: 3D histogram of RGB color frequencies.
+            - bin_edges: Bin edges for each RGB channel.
+    """
+    return compute_3d_histogram(img_path, color_space="rgb", **kwargs)
+
+
+def compute_3d_histogram_lab(
+    img_path: str,
+    **kwargs
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Compute a 3D Lab color histogram from an image.
+
+    Wrapper around :func:`compute_3d_histogram` with ``color_space="lab"``.
+
+    Args:
+        img_path (str): Path to the input image file.
+        **kwargs: Additional keyword arguments passed to
+            :func:`compute_3d_histogram`.
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray]:
+            - hist: 3D histogram of Lab color frequencies.
+            - bin_edges: Bin edges for each Lab channel.
+    """
+    return compute_3d_histogram(img_path, color_space="lab", **kwargs)
+
+
+def compute_3d_histogram_hsv(
+    img_path: str,
+    **kwargs
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Compute a 3D HSV color histogram from an image.
+
+    Wrapper around :func:`compute_3d_histogram` with ``color_space="hsv"``.
+
+    Args:
+        img_path (str): Path to the input image file.
+        **kwargs: Additional keyword arguments passed to
+            :func:`compute_3d_histogram`.
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray]:
+            - hist: 3D histogram of HSV color frequencies.
+            - bin_edges: Bin edges for each HSV channel.
+    """
+    return compute_3d_histogram(img_path, color_space="hsv", **kwargs)

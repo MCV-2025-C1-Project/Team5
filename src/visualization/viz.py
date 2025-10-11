@@ -10,6 +10,33 @@ from src.models.main import ComputeImageHistogram
 from src.tools.startup import logger
 
 
+# Create system with best mAP@5 combination for sample visualizations
+DESC_NAME_TO_FUNC = {
+    'RGB': 'rgb',
+    'HSV': 'hsv',
+    'YCbCr': 'ycbcr',
+    'LAB': 'lab',
+    'Grayscale': 'grayscale',
+    '3D_RGB': '3d_rgb',
+    '3D_HSV': '3d_hsv',
+    '3D_LAB': '3d_lab',
+    '2D_YCbCr': '2d_ycbcr'
+}
+
+DIST_NAME_TO_FUNC = {
+    'Euclidean': 'euclidean.euclidean_distance',
+    'L1': 'l1.compute_l1_distance',
+    'Chi-Square': 'chi_2.compute_chi_2_distance',
+    'Hist. Intersection': 'histogram_intersection.compute_histogram_intersection',
+    'Hellinger': 'hellinger.hellinger_kernel',
+    'Cosine': 'cosine.compute_cosine_similarity',
+    'Canberra': 'canberra.canberra_distance',
+    'Bhattacharyya': 'bhattacharyya.bhattacharyya_distance',
+    'Jeffrey Div.': 'jensen_shannon.jeffrey_divergence',
+    'Correlation': 'correlation.correlation_distance'
+}
+
+
 def plot_top_k_results(query_image_path, retrieved_results,
                        museum_dir, save_path, k: int = 5):
     """Plot top-k retrieval results for a query image."""
@@ -41,9 +68,16 @@ def plot_top_k_results(query_image_path, retrieved_results,
     plt.close()  # Close instead of showing
 
 
-def generate_comprehensive_analysis(qsd1_dir: str, museum_dir: str, ground_truth_pickle: str,
-                                    values_per_bin: int = 1, output_dir: str = "data/results", k: int = 5,
-                                    descriptors: List[str] = None, distance_metrics: List[str] = None):
+def generate_comprehensive_analysis(
+    qsd1_dir: str,
+    museum_dir: str,
+    ground_truth_pickle: str,
+    values_per_bin: int = 1,
+    output_dir: str = "data/results",
+    k: int = 5,
+    descriptors: List[str] = None,
+    distance_metrics: List[str] = None
+):
     """Generate complete analysis for all descriptors and distance metrics.
 
     Args:
@@ -98,10 +132,10 @@ def generate_comprehensive_analysis(qsd1_dir: str, museum_dir: str, ground_truth
                 best_dist_map5 = distance
 
     logger.info(f"BEST OVERALL COMBINATIONS:")
-    logger.info(
-        f"   Best mAP@1: {best_desc_map1} + {best_dist_map1} = {best_overall_map1:.4f}")
-    logger.info(
-        f"   Best mAP@5: {best_desc_map5} + {best_dist_map5} = {best_overall_map5:.4f}")
+    logger.info(f"   Best mAP@1: {best_desc_map1} + {best_dist_map1} "
+                f"= {best_overall_map1:.4f}")
+    logger.info(f"   Best mAP@5: {best_desc_map5} + {best_dist_map5} "
+                f"= {best_overall_map5:.4f}")
 
     # Create comprehensive heatmap for all combinations
     descriptor_names = list(all_results.keys())
@@ -131,7 +165,8 @@ def generate_comprehensive_analysis(qsd1_dir: str, museum_dir: str, ground_truth
     for i in range(len(descriptor_names)):
         for j in range(len(distance_names)):
             ax.text(j, i, f'{map1_matrix[i, j]:.3f}',
-                    ha="center", va="center", color="black", fontweight='bold', fontsize=8)
+                    ha="center", va="center",
+                    color="black", fontweight='bold', fontsize=8)
 
     ax.set_title('mAP@1 Performance: All Descriptor-Distance Combinations')
     plt.tight_layout()
@@ -153,7 +188,8 @@ def generate_comprehensive_analysis(qsd1_dir: str, museum_dir: str, ground_truth
     for i in range(len(descriptor_names)):
         for j in range(len(distance_names)):
             ax.text(j, i, f'{map5_matrix[i, j]:.3f}',
-                    ha="center", va="center", color="black", fontweight='bold', fontsize=12)
+                    ha="center", va="center",
+                    color="black", fontweight='bold', fontsize=12)
 
     ax.set_title('mAP@5 Performance: All Descriptor-Distance Combinations')
     plt.tight_layout()
@@ -161,30 +197,8 @@ def generate_comprehensive_analysis(qsd1_dir: str, museum_dir: str, ground_truth
                 dpi=300, bbox_inches='tight')
     plt.close()
 
-    # Create system with best mAP@5 combination for sample visualizations
-    desc_name_to_func = {
-        'RGB': 'rgb',
-        'HSV': 'hsv',
-        'YCbCr': 'ycbcr',
-        'LAB': 'lab',
-        'Grayscale': 'grayscale'
-    }
-
-    dist_name_to_func = {
-        'Euclidean': 'euclidean.euclidean_distance',
-        'L1': 'l1.compute_l1_distance',
-        'Chi-Square': 'chi_2.compute_chi_2_distance',
-        'Hist. Intersection': 'histogram_intersection.compute_histogram_intersection',
-        'Hellinger': 'hellinger.hellinger_kernel',
-        'Cosine': 'cosine.compute_cosine_similarity',
-        'Canberra': 'canberra.canberra_distance',
-        'Bhattacharyya': 'bhattacharyya.bhattacharyya_distance',
-        'Jeffrey Div.': 'jensen_shannon.jeffrey_divergence',
-        'Correlation': 'correlation.correlation_distance'
-    }
-
-    best_desc_func = desc_name_to_func[best_desc_map5]
-    best_dist_func = dist_name_to_func[best_dist_map5]
+    best_desc_func = DESC_NAME_TO_FUNC[best_desc_map5]
+    best_dist_func = DIST_NAME_TO_FUNC[best_dist_map5]
     best_system = ComputeImageHistogram(
         museum_dir, best_dist_func, best_desc_func, values_per_bin)
 
@@ -213,8 +227,9 @@ def generate_comprehensive_analysis(qsd1_dir: str, museum_dir: str, ground_truth
         if idx < len(ground_truth):
             gt = ground_truth[idx]
             gt_id = gt[0] if isinstance(gt, list) else gt
-            logger.info(
-                f"Query {idx}: GT={gt_id}, Retrieved={[id for id, _ in retrieved]}, Top-1 Correct={retrieved[0][0] == gt_id}")
+            logger.info(f"Query {idx}: GT={gt_id}, "
+                        f"Retrieved={[id for id, _ in retrieved]}, "
+                        f"Top-1 Correct={retrieved[0][0] == gt_id}")
 
     # Generate results for all queries and save as pickle
     logger.info("Generating results for all queries...")
@@ -254,8 +269,8 @@ def generate_comprehensive_analysis(qsd1_dir: str, museum_dir: str, ground_truth
     plt.figure(figsize=(12, 10))
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
                 xticklabels=unique_labels, yticklabels=unique_labels)
-    plt.title(
-        f'Confusion Matrix - Top-1 Predictions\n{best_desc_map5} + {best_dist_map5}')
+    plt.title(f"Confusion Matrix - Top-1 Predictions\n"
+              f"{best_desc_map5} + {best_dist_map5}")
     plt.ylabel('Ground Truth')
     plt.xlabel('Predicted')
     plt.tight_layout()
@@ -301,12 +316,12 @@ def generate_comprehensive_analysis(qsd1_dir: str, museum_dir: str, ground_truth
     logger.info(f"Saved summary to: {summary_path}")
 
     logger.info(f"All results saved to: {output_dir}")
-    logger.info(
-        f"  - Heatmaps: comprehensive_heatmap_map1.png, comprehensive_heatmap_map5.png")
+    logger.info("  - Heatmaps: comprehensive_heatmap_map1.png, "
+                "comprehensive_heatmap_map5.png")
     logger.info(f"  - Sample visualizations: sample_*.png")
     logger.info(f"  - Top-{k} results: result.pkl")
-    logger.info(
-        f"  - Confusion matrices: confusion_matrix_top1.png, confusion_matrix_top{k}.png")
+    logger.info(f"  - Confusion matrices: confusion_matrix_top1.png, "
+                f"confusion_matrix_top{k}.png")
     logger.info(f"  - Summary: summary.pkl")
 
     return all_results, best_desc_map5, best_dist_map5, best_overall_map5, result_list

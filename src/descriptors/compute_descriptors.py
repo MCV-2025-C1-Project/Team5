@@ -4,23 +4,27 @@ import argparse
 import pickle
 import numpy as np
 
-from src.data.extract import read_image
-
-from src.descriptors.grayscale import compute_grayscale_histogram
-from src.descriptors.hsv import compute_hsv_histogram
-from src.descriptors.lab import compute_lab_histogram
-from src.descriptors.rgb import compute_rgb_histogram
-from src.descriptors.ycbcr import compute_ycbcr_histogram
+from src.descriptors import (grayscale,
+                             hsv,
+                             lab,
+                             rgb,
+                             ycbcr,
+                             dim2,
+                             dim3)
 
 from src.tools.startup import logger
 
 # Map a short name -> (callable, default params)
 DESCRIPTORS = {
-    "grayscale": (compute_grayscale_histogram, {"values_per_bin": 1}),
-    "hsv":       (compute_hsv_histogram,       {"values_per_bin": 1}),
-    "lab":       (compute_lab_histogram,       {"values_per_bin": 1}),
-    "rgb":       (compute_rgb_histogram,       {"values_per_bin": 1}),
-    "ycbcr":     (compute_ycbcr_histogram,     {"values_per_bin": 1}),
+    "grayscale": (grayscale.compute_grayscale_histogram, {"values_per_bin": 1}),
+    "hsv":       (hsv.compute_hsv_histogram,             {"values_per_bin": 1}),
+    "lab":       (lab.compute_lab_histogram,             {"values_per_bin": 1}),
+    "rgb":       (rgb.compute_rgb_histogram,             {"values_per_bin": 1}),
+    "ycbcr":     (ycbcr.compute_ycbcr_histogram,         {"values_per_bin": 1}),
+    '3d_rgb':    (dim3.compute_3d_histogram_rgb,         {"values_per_bin": 1}),
+    '3d_hsv':    (dim3.compute_3d_histogram_hsv,         {"values_per_bin": 1}),
+    '3d_lab':    (dim3.compute_3d_histogram_lab,         {"values_per_bin": 1}),
+    '2d_ycbcr':  (dim2.compute_2d_histogram,             {"values_per_bin": 1}),
 }
 
 # Only process real images (ignore .png masks & metadata) IMG_EXTS = (".jpg", ".jpeg")
@@ -82,7 +86,8 @@ def main():
         description="Compute 1D image descriptors."
     )
     ap.add_argument("--descriptor", required=True, choices=DESCRIPTORS.keys(),
-                    help="Which descriptor to run: grayscale | hsv | lab | rgb | ycbcr")
+                    help="Which descriptor to run: grayscale | hsv | lab | rgb "
+                         "| ycbcr | 2d_ycbcr | 3d_rgb | 3d_hsv | 3d_lab")
     ap.add_argument("--input", required=True,
                     help="Folder with images (BBDD, QSD1, QST1)")
     ap.add_argument("--outdir", default="data/descriptors",
@@ -97,8 +102,9 @@ def main():
     if args.values_per_bin is not None:
         params["values_per_bin"] = args.values_per_bin
 
-    logger.info(f"Beginning computation of descriptor '{args.descriptor}' to data in folder '{args.input}'."
-                f" Values per bin: {params['values_per_bin']}")
+    logger.info(
+        f"Beginning computation of descriptor '{args.descriptor}' to data in "
+        f"folder '{args.input}'. Values per bin: {params['values_per_bin']}")
 
     os.makedirs(args.outdir, exist_ok=True)
 

@@ -1,18 +1,70 @@
 from pathlib import Path
 from typing import List
-from tqdm import tqdm
 import pickle
+from tqdm import tqdm
 
 from src.metrics.precision import mapk
 from src.models.main import ComputeImageHistogram
 from src.tools.startup import logger
 
 
-def evaluate_all_descriptors_and_distances(qsd1_dir: str, museum_dir: str,
-                                           ground_truth_pickle: str, values_per_bin: int = 1,
-                                           k_values: List[int] = [1, 5],
-                                           descriptors: List[str] = None,
-                                           distance_metrics: List[str] = None):
+# Define all available descriptors and distance metrics
+ALL_DESCRIPTORS = [
+    'rgb',
+    'hsv',
+    'ycbcr',
+    'lab',
+    'grayscale',
+    '3d_rgb',
+    '3d_hsv',
+    '3d_lab',
+    '2d_ycbcr']
+
+ALL_DISTANCE_METRICS = [
+    'euclidean.euclidean_distance',
+    'l1.compute_l1_distance',
+    'chi_2.compute_chi_2_distance',
+    'histogram_intersection.compute_histogram_intersection',
+    'hellinger.hellinger_kernel',
+    'cosine.compute_cosine_similarity',
+    'canberra.canberra_distance',
+    'bhattacharyya.bhattacharyya_distance',
+    'jensen_shannon.jeffrey_divergence',
+    'correlation.correlation_distance'
+]
+
+DESCRIPTOR_NAMES = {
+    'rgb': 'RGB',
+    'hsv': 'HSV',
+    'ycbcr': 'YCbCr',
+    'lab': 'LAB',
+    'grayscale': 'Grayscale',
+    '3d_rgb': '3D_RGB',
+    '3d_hsv': '3D_HSV',
+    '3d_lab': '3D_LAB',
+    '2d_ycbcr': '2D_YCbCr'
+}
+
+DISTANCE_NAMES = {
+    'euclidean.euclidean_distance': 'Euclidean',
+    'l1.compute_l1_distance': 'L1',
+    'chi_2.compute_chi_2_distance': 'Chi-Square',
+    'histogram_intersection.compute_histogram_intersection': 'Hist. Intersection',
+    'hellinger.hellinger_kernel': 'Hellinger',
+    'cosine.compute_cosine_similarity': 'Cosine',
+    'canberra.canberra_distance': 'Canberra',
+    'bhattacharyya.bhattacharyya_distance': 'Bhattacharyya',
+    'jensen_shannon.jeffrey_divergence': 'Jeffrey Div.',
+    'correlation.correlation_distance': 'Correlation'
+}
+
+
+def evaluate_all_descriptors_and_distances(
+    qsd1_dir: str, museum_dir: str,
+        ground_truth_pickle: str, values_per_bin: int = 1,
+        k_values: List[int] = [1, 5],
+        descriptors: List[str] = None,
+        distance_metrics: List[str] = None):
     """
     Evaluate all combinations of descriptors and distance metrics.
 
@@ -34,73 +86,46 @@ def evaluate_all_descriptors_and_distances(qsd1_dir: str, museum_dir: str,
 
     logger.info(f"Loaded ground truth: {len(ground_truth)} entries")
 
-    # Define all available descriptors and distance metrics
-    all_descriptors = ['rgb', 'hsv', 'ycbcr', 'lab', 'grayscale']
-    all_distance_metrics = ['euclidean.euclidean_distance', 'l1.compute_l1_distance', 'chi_2.compute_chi_2_distance',
-                            'histogram_intersection.compute_histogram_intersection', 'hellinger.hellinger_kernel', 'cosine.compute_cosine_similarity',
-                            'canberra.canberra_distance', 'bhattacharyya.bhattacharyya_distance', 'jensen_shannon.jeffrey_divergence',
-                            'correlation.correlation_distance']
-
     # Use provided lists or default to all
     if descriptors is None:
-        descriptors = all_descriptors
+        descriptors = ALL_DESCRIPTORS
     else:
         # Validate provided descriptors
         for desc in descriptors:
-            if desc not in all_descriptors:
-                raise ValueError(
-                    f"Invalid descriptor: {desc}. Valid options: {all_descriptors}")
+            if desc not in ALL_DESCRIPTORS:
+                raise ValueError(f"Invalid descriptor: {desc}. "
+                                 f"Valid options: {ALL_DESCRIPTORS}")
 
     if distance_metrics is None:
-        distance_metrics = all_distance_metrics
+        distance_metrics = ALL_DISTANCE_METRICS
     else:
         # Validate provided distance metrics
         for dist in distance_metrics:
-            if dist not in all_distance_metrics:
-                raise ValueError(
-                    f"Invalid distance metric: {dist}. Valid options: {all_distance_metrics}")
-
-    descriptor_names = {
-        'rgb': 'RGB',
-        'hsv': 'HSV',
-        'ycbcr': 'YCbCr',
-        'lab': 'LAB',
-        'grayscale': 'Grayscale'
-    }
-
-    distance_names = {
-        'euclidean.euclidean_distance': 'Euclidean',
-        'l1.compute_l1_distance': 'L1',
-        'chi_2.compute_chi_2_distance': 'Chi-Square',
-        'histogram_intersection.compute_histogram_intersection': 'Hist. Intersection',
-        'hellinger.hellinger_kernel': 'Hellinger',
-        'cosine.compute_cosine_similarity': 'Cosine',
-        'canberra.canberra_distance': 'Canberra',
-        'bhattacharyya.bhattacharyya_distance': 'Bhattacharyya',
-        'jensen_shannon.jeffrey_divergence': 'Jeffrey Div.',
-        'correlation.correlation_distance': 'Correlation'
-    }
+            if dist not in ALL_DISTANCE_METRICS:
+                raise ValueError(f"Invalid distance metric: {dist}. "
+                                 f"Valid options: {ALL_DISTANCE_METRICS}")
 
     # Results dictionary - organized by descriptor then distance
     all_results = {}
     total_combinations = len(descriptors) * len(distance_metrics)
     combination_count = 0
 
-    logger.info(
-        f"Descriptors: {len(descriptors)}, Distance Metrics: {len(distance_metrics)}")
+    logger.info(f"Descriptors: {len(descriptors)}, "
+                f"Distance Metrics: {len(distance_metrics)}")
     logger.info(f"Total Combinations: {total_combinations}")
     logger.info(f"Values per bin: {values_per_bin}")
 
     for desc_idx, descriptor in enumerate(descriptors):
         descriptor_results = {}
 
-        logger.info(
-            f"DESCRIPTOR: {descriptor_names[descriptor]} ({desc_idx + 1}/{len(descriptors)})")
+        logger.info(f"DESCRIPTOR: {DESCRIPTOR_NAMES[descriptor]} "
+                    f"({desc_idx + 1}/{len(descriptors)})")
 
         for dist_metric in distance_metrics:
             combination_count += 1
-            logger.info(f"[{combination_count}/{total_combinations}] "
-                        f"{descriptor_names[descriptor]} + {distance_names[dist_metric]}")
+            logger.info(
+                f"[{combination_count}/{total_combinations}] "
+                f"{DESCRIPTOR_NAMES[descriptor]} + {DISTANCE_NAMES[dist_metric]}")
 
             # Initialize system
             system = ComputeImageHistogram(
@@ -110,7 +135,9 @@ def evaluate_all_descriptors_and_distances(qsd1_dir: str, museum_dir: str,
             all_predicted = []
             all_actual = []
 
-            for query_idx, query_path in enumerate(tqdm(query_images, desc="Queries", leave=False)):
+            for query_idx, query_path in enumerate(
+                    tqdm(query_images, desc="Queries", leave=False)
+            ):
                 if query_idx < len(ground_truth):
                     retrieved = system.retrieve(
                         str(query_path), k=max(k_values))
@@ -127,7 +154,7 @@ def evaluate_all_descriptors_and_distances(qsd1_dir: str, museum_dir: str,
             map_1 = mapk(all_actual, all_predicted, k=1)
             map_5 = mapk(all_actual, all_predicted, k=5)
 
-            descriptor_results[distance_names[dist_metric]] = {
+            descriptor_results[DISTANCE_NAMES[dist_metric]] = {
                 'mAP@1': map_1,
                 'mAP@5': map_5,
                 'predicted': all_predicted,
@@ -136,6 +163,6 @@ def evaluate_all_descriptors_and_distances(qsd1_dir: str, museum_dir: str,
 
             logger.info(f"   mAP@1: {map_1:.4f}, mAP@5: {map_5:.4f}")
 
-        all_results[descriptor_names[descriptor]] = descriptor_results
+        all_results[DESCRIPTOR_NAMES[descriptor]] = descriptor_results
 
     return all_results
