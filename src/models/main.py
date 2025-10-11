@@ -50,7 +50,7 @@ DESCRIPTOR_FUNCTIONS = {
     '3d_lab': dim3.compute_3d_histogram_lab,
     '2d_ycbcr': dim2.compute_2d_histogram,
     'spatial_pyramid': spatial_pyramid.spatial_pyramid_histogram,
-    'block_histogram': block_histogram.block_based_histrogram
+    'block_histogram': block_histogram.block_based_histogram
 }
 
 

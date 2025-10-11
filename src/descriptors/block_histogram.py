@@ -72,7 +72,7 @@ def block_based_histogram_from_array(
     return np.concatenate(block_histograms)
 
 
-def block_based_histrogram(
+def block_based_histogram(
         img_path: str,
         compute_histogram_func,
         values_per_bin: int = 1,
