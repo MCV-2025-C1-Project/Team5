@@ -28,8 +28,14 @@ DESC_NAME_TO_FUNC = {
     '2D_HSV': '2d_hsv',
     'Spatial_Pyramid_LAB': 'spatial_pyramid_lab',
     'Spatial_Pyramid_HSV': 'spatial_pyramid_hsv',
+    'Spatial_Pyramid_2D_LAB': 'spatial_pyramid_2d_lab',
+    'Spatial_Pyramid_2D_HSV': 'spatial_pyramid_2d_hsv',
+    'Spatial_Pyramid_3D_LAB': 'spatial_pyramid_3d_lab',
+    'Spatial_Pyramid_3D_HSV': 'spatial_pyramid_3d_hsv',
     'Block_Histogram_LAB': 'block_histogram_lab',
     'Block_Histogram_HSV': 'block_histogram_hsv',
+    'Block_Histogram_2D_LAB': 'block_histogram_2d_lab',
+    'Block_Histogram_2D_HSV': 'block_histogram_2d_hsv',
     'Block_Histogram_3D_LAB': 'block_histogram_3d_lab',
     'Block_Histogram_3D_HSV': 'block_histogram_3d_hsv'
 }
