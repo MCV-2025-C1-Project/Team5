@@ -377,24 +377,106 @@ def block_based_histogram_3d_lab(img_path: str, **kwargs):
     )
 
 
-def block_based_histogram_3d_hsv(img_path: str, **kwargs):
+def block_based_histogram_3d_hsv_2x2(img_path: str, **kwargs):
     """
-    Compute block-based 3D histograms in the HSV color space.
+    Compute block-based 3D HSV histograms using a 2x2 spatial grid.
 
-    This function divides the image into spatial blocks and computes a 3D HSV histogram for each block,
-    concatenating all block histograms into a single high-dimensional descriptor vector.
+    This function divides the image into 2x2 blocks and computes a 3D HSV histogram 
+    (based on hue, saturation, and value) for each block. The histograms from all blocks 
+    are concatenated into a single descriptor vector, capturing coarse spatial and chromatic information.
 
     Args:
         img_path (str): Path to the input image file.
-        **kwargs (dict, optional): Additional parameters passed to the 3D histogram computation.
+        **kwargs (dict, optional): Additional parameters passed to the 3D HSV histogram computation.
 
     Returns:
         tuple[np.ndarray, np.ndarray]:
-            - Concatenated 3D histogram descriptor in the HSV color space.
+            - Concatenated 3D HSV histogram descriptor (2x2 grid).
             - Bin edges or structure returned by the histogram function.
     """
     return block_based_histogram(
         img_path,
         compute_histogram_func=dim3.compute_3d_histogram_hsv_from_array,
+        grid_size=(2, 2),
         **kwargs
     )
+
+
+def block_based_histogram_3d_hsv_4x4(img_path: str, **kwargs):
+    """
+    Compute block-based 3D HSV histograms using a 4x4 spatial grid.
+
+    This function divides the image into 4x4 blocks and computes a 3D HSV histogram 
+    (based on hue, saturation, and value) for each block. The histograms from all blocks 
+    are concatenated into a single descriptor vector, capturing intermediate spatial and color details.
+
+    Args:
+        img_path (str): Path to the input image file.
+        **kwargs (dict, optional): Additional parameters passed to the 3D HSV histogram computation.
+
+    Returns:
+        tuple[np.ndarray, np.ndarray]:
+            - Concatenated 3D HSV histogram descriptor (4x4 grid).
+            - Bin edges or structure returned by the histogram function.
+    """
+    return block_based_histogram(
+        img_path,
+        compute_histogram_func=dim3.compute_3d_histogram_hsv_from_array,
+        grid_size=(4, 4),
+        **kwargs
+    )
+
+
+def block_based_histogram_3d_hsv_8x8(img_path: str, **kwargs):
+    """
+    Compute block-based 3D HSV histograms using an 8x8 spatial grid.
+
+    This function divides the image into 8x8 blocks and computes a 3D HSV histogram 
+    (based on hue, saturation, and value) for each block. The histograms from all blocks 
+    are concatenated into a single high-dimensional descriptor vector, capturing detailed 
+    spatial and chromatic structure.
+
+    Args:
+        img_path (str): Path to the input image file.
+        **kwargs (dict, optional): Additional parameters passed to the 3D HSV histogram computation.
+
+    Returns:
+        tuple[np.ndarray, np.ndarray]:
+            - Concatenated 3D HSV histogram descriptor (8x8 grid).
+            - Bin edges or structure returned by the histogram function.
+    """
+    return block_based_histogram(
+        img_path,
+        compute_histogram_func=dim3.compute_3d_histogram_hsv_from_array,
+        grid_size=(8, 8),
+        **kwargs
+    )
+
+
+def block_based_histogram_3d_hsv_16x16(img_path: str, **kwargs):
+    """
+    Compute block-based 3D HSV histograms using a 16x16 spatial grid.
+
+    This function divides the image into 16x16 blocks and computes a 3D HSV histogram 
+    (based on hue, saturation, and value) for each block. The histograms from all blocks 
+    are concatenated into an extremely high-dimensional descriptor vector, capturing 
+    fine spatial and chromatic patterns.
+
+    Note: This descriptor is computationally heavy and may lead to very large feature vectors.
+
+    Args:
+        img_path (str): Path to the input image file.
+        **kwargs (dict, optional): Additional parameters passed to the 3D HSV histogram computation.
+
+    Returns:
+        tuple[np.ndarray, np.ndarray]:
+            - Concatenated 3D HSV histogram descriptor (16x16 grid).
+            - Bin edges or structure returned by the histogram function.
+    """
+    return block_based_histogram(
+        img_path,
+        compute_histogram_func=dim3.compute_3d_histogram_hsv_from_array,
+        grid_size=(16, 16),
+        **kwargs
+    )
+

@@ -32,7 +32,10 @@ ALL_DESCRIPTORS = [
     'spatial_pyramid_2d_hsv_lvl4',
     'spatial_pyramid_2d_hsv_lvl5',
     'spatial_pyramid_3d_lab',
-    'spatial_pyramid_3d_hsv',
+    'spatial_pyramid_3d_hsv_lvl2',
+    'spatial_pyramid_3d_hsv_lvl3',
+    'spatial_pyramid_3d_hsv_lvl4',
+    'spatial_pyramid_3d_hsv_lvl5',
     'block_histogram_lab',
     'block_histogram_hsv_2x2',
     'block_histogram_hsv_4x4',
@@ -44,7 +47,10 @@ ALL_DESCRIPTORS = [
     'block_histogram_2d_hsv_8x8',
     'block_histogram_2d_hsv_16x16',
     'block_histogram_3d_lab',
-    'block_histogram_3d_hsv'
+    'block_histogram_3d_hsv_2x2',
+    'block_histogram_3d_hsv_4x4',
+    'block_histogram_3d_hsv_8x8',
+    'block_histogram_3d_hsv_16x16'
 ]
 
 ALL_DISTANCE_METRICS = [
@@ -83,16 +89,25 @@ DESCRIPTOR_NAMES = {
     'spatial_pyramid_2d_hsv_lvl4': 'Spatial_Pyramid_2D_HSV_LVL4',
     'spatial_pyramid_2d_hsv_lvl5': 'Spatial_Pyramid_2D_HSV_LVL5',
     'spatial_pyramid_3d_lab': 'Spatial_Pyramid_3D_LAB',
-    'spatial_pyramid_3d_hsv': 'Spatial_Pyramid_3D_HSV',
+    'spatial_pyramid_3d_hsv_lvl2': 'Spatial_Pyramid_3D_HSV_LVL2',
+    'spatial_pyramid_3d_hsv_lvl3': 'Spatial_Pyramid_3D_HSV_LVL3',
+    'spatial_pyramid_3d_hsv_lvl4': 'Spatial_Pyramid_3D_HSV_LVL4',
+    'spatial_pyramid_3d_hsv_lvl5': 'Spatial_Pyramid_3D_HSV_LVL5',
     'block_histogram_lab': 'Block_Histogram_LAB',
     'block_histogram_hsv_2x2': 'Block_Histogram_HSV_2X2',
     'block_histogram_hsv_4x4': 'Block_Histogram_HSV_4X4',
     'block_histogram_hsv_8x8': 'Block_Histogram_HSV_8X8',
     'block_histogram_hsv_16x16': 'Block_Histogram_HSV_16X16',
     'block_histogram_2d_lab': 'Block_Histogram_2D_LAB',
-    'block_histogram_2d_hsv': 'Block_Histogram_2D_HSV',
+    'block_histogram_2d_hsv_2x2': 'Block_Histogram_2D_HSV_2X2',
+    'block_histogram_2d_hsv_4x4': 'Block_Histogram_2D_HSV_4X4',
+    'block_histogram_2d_hsv_8x8': 'Block_Histogram_2D_HSV_8X8',
+    'block_histogram_2d_hsv_16x16': 'Block_Histogram_2D_HSV_16X16',
     'block_histogram_3d_lab': 'Block_Histogram_3D_LAB',
-    'block_histogram_3d_hsv': 'Block_Histogram_3D_HSV'
+    'block_histogram_3d_hsv_2x2': 'Block_Histogram_3D_HSV_2X2',
+    'block_histogram_3d_hsv_4x4': 'Block_Histogram_3D_HSV_4X4',
+    'block_histogram_3d_hsv_8x8': 'Block_Histogram_3D_HSV_8X8',
+    'block_histogram_3d_hsv_16x16': 'Block_Histogram_3D_HSV_16X16'
 }
 
 DISTANCE_NAMES = {
