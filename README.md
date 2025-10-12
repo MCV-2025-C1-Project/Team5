@@ -210,7 +210,7 @@ python -m src.descriptors.compute_descriptors \
     --descriptor spatial_pyramid_hsv_lvl4 \
     --input data/raw/BBDD \
     --outdir data/descriptors \
-    --values_per_bin 5
+    --values_per_bin 8
 ```
 
 This process must be done to query datasets as well, example command:
@@ -222,7 +222,7 @@ python -m src.descriptors.compute_descriptors \
     --descriptor spatial_pyramid_hsv_lvl4 \
     --input data/raw/qsd1_w1 \
     --outdir data/descriptors/w1 \
-    --values_per_bin 5
+    --values_per_bin 8
 ```
 
 To process the segmented images with the background removed (2nd week case):
