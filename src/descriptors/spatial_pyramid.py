@@ -103,14 +103,14 @@ def spatial_pyramid_histogram_lab(img_path: str, **kwargs):
     )
 
 
-def spatial_pyramid_histogram_hsv(img_path: str, **kwargs):
+def spatial_pyramid_histogram_hsv_lvl2(img_path: str, **kwargs):
     """
-    Compute a spatial pyramid histogram descriptor using the HSV color space.
+    Compute a spatial pyramid histogram descriptor using the HSV color space (2 levels).
 
     This function applies the spatial pyramid approach with HSV histograms, 
-    capturing color and spatial information at multiple scales. 
-    Each pyramid level subdivides the image into smaller grids, 
-    computes histograms for each region, and concatenates them into a single descriptor.
+    capturing both global and coarse spatial color information. 
+    It computes histograms for 1x1 and 2x2 grids and concatenates them 
+    into a single descriptor vector.
 
     Args:
         img_path (str): Path to the input image file.
@@ -124,6 +124,90 @@ def spatial_pyramid_histogram_hsv(img_path: str, **kwargs):
     return spatial_pyramid_histogram(
         img_path,
         compute_histogram_func=hsv.compute_hsv_histogram_from_array,
+        levels=2,
+        **kwargs
+    )
+
+
+def spatial_pyramid_histogram_hsv_lvl3(img_path: str, **kwargs):
+    """
+    Compute a spatial pyramid histogram descriptor using the HSV color space (3 levels).
+
+    This function applies the spatial pyramid approach with HSV histograms, 
+    capturing color and spatial information at multiple scales. 
+    It computes histograms for 1x1, 2x2, and 4x4 grids and concatenates 
+    them into a single descriptor vector.
+
+    Args:
+        img_path (str): Path to the input image file.
+        **kwargs (dict, optional): Additional parameters passed to the HSV histogram computation.
+
+    Returns:
+        tuple[np.ndarray, np.ndarray]:
+            - Concatenated spatial pyramid histogram descriptor in the HSV color space.
+            - Bin edges or structure returned by the histogram function.
+    """
+    return spatial_pyramid_histogram(
+        img_path,
+        compute_histogram_func=hsv.compute_hsv_histogram_from_array,
+        levels=3,
+        **kwargs
+    )
+
+
+def spatial_pyramid_histogram_hsv_lvl4(img_path: str, **kwargs):
+    """
+    Compute a spatial pyramid histogram descriptor using the HSV color space (4 levels).
+
+    This function applies the spatial pyramid approach with HSV histograms, 
+    capturing very fine-grained spatial color information. 
+    It computes histograms for 1x1, 2x2, 4x4, and 8x8 grids and concatenates 
+    them into a single, high-dimensional descriptor vector.
+
+    Note:
+        Using 4 levels produces a large descriptor and may increase computation time.
+
+    Args:
+        img_path (str): Path to the input image file.
+        **kwargs (dict, optional): Additional parameters passed to the HSV histogram computation.
+
+    Returns:
+        tuple[np.ndarray, np.ndarray]:
+            - Concatenated spatial pyramid histogram descriptor in the HSV color space.
+            - Bin edges or structure returned by the histogram function.
+    """
+    return spatial_pyramid_histogram(
+        img_path,
+        compute_histogram_func=hsv.compute_hsv_histogram_from_array,
+        levels=4,
+        **kwargs
+    )
+
+def spatial_pyramid_histogram_hsv_lvl5(img_path: str, **kwargs):
+    """
+    Compute a spatial pyramid histogram descriptor using the HSV color space (5 levels).
+
+    This function applies the spatial pyramid approach with HSV histograms, 
+    capturing very fine-grained spatial color information. 
+    It computes histograms for 1x1, 2x2, 4x4, and 8x8 grids and concatenates 
+    them into a single, high-dimensional descriptor vector.
+
+    Note:
+        Using 5 levels produces a large descriptor and may increase computation time.
+
+    Args:
+        img_path (str): Path to the input image file.
+        **kwargs (dict, optional): Additional parameters passed to the HSV histogram computation.
+
+    Returns:
+        tuple[np.ndarray, np.ndarray]:
+            - Concatenated spatial pyramid histogram descriptor in the HSV color space.
+            - Bin edges or structure returned by the histogram function.
+    """
+    return spatial_pyramid_histogram(
+        img_path,
+        compute_histogram_func=hsv.compute_hsv_histogram_from_array,
+        levels=5,
         **kwargs
     )
 
