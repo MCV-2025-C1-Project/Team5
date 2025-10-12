@@ -649,7 +649,7 @@ def visualize_color_pipeline_steps_mask(
     axes[6].imshow(mask_open, cmap='gray'); axes[6].set_title(f"Opening {opening_size}×{opening_size}", fontweight='bold'); axes[6].axis('off')
     axes[7].imshow(mask_close, cmap='gray'); axes[7].set_title(f"Closing {closing_size}×{closing_size}", fontweight='bold'); axes[7].axis('off')
     axes[8].imshow(mask_filled, cmap='gray'); axes[8].set_title("Hole Fill", fontweight='bold'); axes[8].axis('off')
-    axes[9].imshow(mask_final, cmap='gray'); axes[9].set_title(f"Area-like Opening (~≥{min_area}px)\nFINAL", fontweight='bold'); axes[9].axis('off')
+    axes[9].imshow(mask_final, cmap='gray'); axes[9].set_title(f"Area Opening (~≥{min_area}px)\nFINAL", fontweight='bold'); axes[9].axis('off')
 
     fig.suptitle("Per-step Color-only Segmentation Pipeline", fontsize=16, fontweight='bold', y=0.99)
     plt.tight_layout(rect=[0, 0, 1, 0.97])
