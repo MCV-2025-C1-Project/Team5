@@ -391,7 +391,7 @@ For each descriptor/bin setting, we computed distances between each query image 
 
 That way we found that the best performing bin size is 52, the best descriptors are the LAB and HSV concatenated histograms, and the best performing distance is the Canberra.
 
-<p align="center"> <img src="reports/figures/w1_experiments_descriptors_distances.png" alt="Heatmat showing the results of the grid search experiments over descriptors and distances" height="230"/> <img src="reports/figures/w1_experiment_vpb.png" alt="Heatmat showing the results of the grid search experiments over descriptors and distances" height="230"/> </p>
+<p align="center"> <img src="reports/figures/w1_experiments_descriptors_distances.png" alt="Heatmat showing the results of the grid search experiments over descriptors and distances" height="230"/> <img src="reports/figures/w1_experiment_vpb.png" alt="Heatmat showing the results of the grid search experiments over values per bin" height="230"/> </p>
 
 > 💡 Detailed experiments results can be found [here](https://drive.google.com/file/d/1xAyKrl3MnFGKuZpDm2FUu5bInHqnu2BU/view?usp=sharing)
 
