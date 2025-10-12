@@ -253,25 +253,104 @@ def block_based_histogram_2d_lab(img_path: str, **kwargs):
         **kwargs
     )
 
-def block_based_histogram_2d_hsv(img_path: str, **kwargs):
+def block_based_histogram_2d_hsv_2x2(img_path: str, **kwargs):
     """
-    Compute block-based 2D histograms in the HSV color space.
+    Compute block-based 2D HSV histograms using a 2x2 spatial grid.
 
-    This function divides the image into spatial blocks and computes a 2D HSV histogram for each block,
-    concatenating all block histograms into a single high-dimensional descriptor vector.
+    This function divides the image into 2x2 blocks and computes a 2D HSV histogram 
+    (based on hue and saturation or other channel combinations) for each block.
+    The histograms from all blocks are concatenated into a single descriptor vector, 
+    capturing both color and coarse spatial information.
 
     Args:
         img_path (str): Path to the input image file.
-        **kwargs (dict, optional): Additional parameters passed to the 2D histogram computation.
+        **kwargs (dict, optional): Additional parameters passed to the 2D HSV histogram computation.
 
     Returns:
         tuple[np.ndarray, np.ndarray]:
-            - Concatenated 2D histogram descriptor in the HSV color space.
+            - Concatenated 2D HSV histogram descriptor (2x2 grid).
             - Bin edges or structure returned by the histogram function.
     """
     return block_based_histogram(
         img_path,
         compute_histogram_func=dim2.compute_2d_histogram_hsv_from_array,
+        grid_size=(2, 2),
+        **kwargs
+    )
+
+
+def block_based_histogram_2d_hsv_4x4(img_path: str, **kwargs):
+    """
+    Compute block-based 2D HSV histograms using a 4x4 spatial grid.
+
+    This function divides the image into 4x4 blocks and computes a 2D HSV histogram 
+    (based on hue and saturation or other channel combinations) for each block.
+    The histograms from all blocks are concatenated into a single descriptor vector, 
+    capturing more detailed spatial color information.
+
+    Args:
+        img_path (str): Path to the input image file.
+        **kwargs (dict, optional): Additional parameters passed to the 2D HSV histogram computation.
+
+    Returns:
+        tuple[np.ndarray, np.ndarray]:
+            - Concatenated 2D HSV histogram descriptor (4x4 grid).
+            - Bin edges or structure returned by the histogram function.
+    """
+    return block_based_histogram(
+        img_path,
+        compute_histogram_func=dim2.compute_2d_histogram_hsv_from_array,
+        grid_size=(4, 4),
+        **kwargs
+    )
+
+
+def block_based_histogram_2d_hsv_8x8(img_path: str, **kwargs):
+    """
+    Compute block-based 2D HSV histograms using an 8x8 spatial grid.
+
+    This function divides the image into 8x8 blocks and computes a 2D HSV histogram 
+    for each block. The histograms are concatenated to form a high-dimensional descriptor 
+    vector that captures fine-grained spatial color information.
+
+    Args:
+        img_path (str): Path to the input image file.
+        **kwargs (dict, optional): Additional parameters passed to the 2D HSV histogram computation.
+
+    Returns:
+        tuple[np.ndarray, np.ndarray]:
+            - Concatenated 2D HSV histogram descriptor (8x8 grid).
+            - Bin edges or structure returned by the histogram function.
+    """
+    return block_based_histogram(
+        img_path,
+        compute_histogram_func=dim2.compute_2d_histogram_hsv_from_array,
+        grid_size=(8, 8),
+        **kwargs
+    )
+
+
+def block_based_histogram_2d_hsv_16x16(img_path: str, **kwargs):
+    """
+    Compute block-based 2D HSV histograms using a 16x16 spatial grid.
+
+    This function divides the image into 16x16 blocks and computes a 2D HSV histogram 
+    for each block. The histograms are concatenated to form a large descriptor vector 
+    that captures very detailed spatial and chromatic information.
+
+    Args:
+        img_path (str): Path to the input image file.
+        **kwargs (dict, optional): Additional parameters passed to the 2D HSV histogram computation.
+
+    Returns:
+        tuple[np.ndarray, np.ndarray]:
+            - Concatenated 2D HSV histogram descriptor (16x16 grid).
+            - Bin edges or structure returned by the histogram function.
+    """
+    return block_based_histogram(
+        img_path,
+        compute_histogram_func=dim2.compute_2d_histogram_hsv_from_array,
+        grid_size=(16, 16),
         **kwargs
     )
 

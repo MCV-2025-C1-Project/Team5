@@ -35,7 +35,10 @@ DESCRIPTORS = {
     'spatial_pyramid_hsv_lvl4': (spatial_pyramid.spatial_pyramid_histogram_hsv_lvl4, {"values_per_bin": 1, "levels": 4}),
     'spatial_pyramid_hsv_lvl5': (spatial_pyramid.spatial_pyramid_histogram_hsv_lvl5, {"values_per_bin": 1, "levels": 5}),
     'spatial_pyramid_2d_lab': (spatial_pyramid.spatial_pyramid_histogram_2d_lab, {"values_per_bin": 1, "levels": 3}),
-    'spatial_pyramid_2d_hsv': (spatial_pyramid.spatial_pyramid_histogram_2d_hsv, {"values_per_bin": 1, "levels": 3}),
+    'spatial_pyramid_2d_hsv_lvl2': (spatial_pyramid.spatial_pyramid_histogram_2d_hsv_lvl2, {"values_per_bin": 1, "levels": 2}),
+    'spatial_pyramid_2d_hsv_lvl3': (spatial_pyramid.spatial_pyramid_histogram_2d_hsv_lvl3, {"values_per_bin": 1, "levels": 3}),
+    'spatial_pyramid_2d_hsv_lvl4': (spatial_pyramid.spatial_pyramid_histogram_2d_hsv_lvl4, {"values_per_bin": 1, "levels": 4}),
+    'spatial_pyramid_2d_hsv_lvl5': (spatial_pyramid.spatial_pyramid_histogram_2d_hsv_lvl5, {"values_per_bin": 1, "levels": 5}),
     'spatial_pyramid_3d_lab': (spatial_pyramid.spatial_pyramid_histogram_3d_lab, {"values_per_bin": 1, "levels": 3}),
     'spatial_pyramid_3d_hsv': (spatial_pyramid.spatial_pyramid_histogram_3d_hsv, {"values_per_bin": 1, "levels": 3}),
     'block_histogram_lab': (block_histogram.block_based_histogram_lab, {"values_per_bin": 1}),
@@ -44,7 +47,10 @@ DESCRIPTORS = {
     'block_histogram_hsv_8x8': (block_histogram.block_based_histogram_hsv_8x8, {"values_per_bin": 1}),
     'block_histogram_hsv_16x16': (block_histogram.block_based_histogram_hsv_16x16, {"values_per_bin": 1}),
     'block_histogram_2d_lab': (block_histogram.block_based_histogram_2d_lab, {"values_per_bin": 1}),
-    'block_histogram_2d_hsv': (block_histogram.block_based_histogram_2d_hsv, {"values_per_bin": 1}),
+    'block_histogram_2d_hsv_2x2': (block_histogram.block_based_histogram_2d_hsv_2x2, {"values_per_bin": 1}),
+    'block_histogram_2d_hsv_4x4': (block_histogram.block_based_histogram_2d_hsv_4x4, {"values_per_bin": 1}),
+    'block_histogram_2d_hsv_8x8': (block_histogram.block_based_histogram_2d_hsv_8x8, {"values_per_bin": 1}),
+    'block_histogram_2d_hsv_16x16': (block_histogram.block_based_histogram_2d_hsv_16x16, {"values_per_bin": 1}),
     'block_histogram_3d_lab': (block_histogram.block_based_histogram_3d_lab, {"values_per_bin": 1}),
     'block_histogram_3d_hsv': (block_histogram.block_based_histogram_3d_hsv, {"values_per_bin": 1})
 }
