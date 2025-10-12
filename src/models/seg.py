@@ -31,7 +31,13 @@ from src.descriptors.hsv import convert_img_to_hsv
 def _estimate_bg_from_borders(image_lab: np.ndarray, border: int = 20) -> Dict[str, np.ndarray]:
     """
     Estimate background color statistics from the image borders in LAB space.
-    Returns robust center (median) and MAD-based scale per channel.
+
+    Args:
+        image_lab (np.ndarray): Image in LAB color space.
+        border (int): Width of border pixels to sample for background estimation.
+
+    Returns:
+        Dict[str, np.ndarray]: Dictionary containing 'median' and 'mad' statistics for each channel.
     """
     H, W, _ = image_lab.shape
     b = max(1, min(border, min(H, W)//4))
@@ -55,7 +61,19 @@ def _lab_robust_distance_weighted(L: np.ndarray, A: np.ndarray, B: np.ndarray,
                                   wL: float = 0.6, wA: float = 1.0, wB: float = 1.0) -> np.ndarray:
     """
     Weighted distance to BG center in LAB, normalized by MAD per channel.
-    Weights let us downweight L (illumination) relative to chroma.
+
+    Args:
+        L (np.ndarray): Lightness channel.
+        A (np.ndarray): A channel (green-red).
+        B (np.ndarray): B channel (blue-yellow).
+        med (np.ndarray): Median values for each LAB channel.
+        mad (np.ndarray): MAD (Median Absolute Deviation) values for each LAB channel.
+        wL (float): Weight for L channel to downweight illumination.
+        wA (float): Weight for A channel.
+        wB (float): Weight for B channel.
+
+    Returns:
+        np.ndarray: Weighted distance to background center.
     """
     dL = (L - med[0]) / mad[0]
     dA = (A - med[1]) / mad[1]
@@ -66,7 +84,13 @@ def _lab_robust_distance_weighted(L: np.ndarray, A: np.ndarray, B: np.ndarray,
 def _hue_circular_distance(h: np.ndarray, h0: float) -> np.ndarray:
     """
     Circular distance on hue (OpenCV H in [0,180)).
-    Returns distance in degrees in [0,90].
+
+    Args:
+        h (np.ndarray): Hue values in range [0,180).
+        h0 (float): Reference hue value.
+
+    Returns:
+        np.ndarray: Circular distance in degrees in range [0,90].
     """
     dh = np.abs(h - h0)
     dh = np.minimum(dh, 180.0 - dh)
@@ -75,9 +99,14 @@ def _hue_circular_distance(h: np.ndarray, h0: float) -> np.ndarray:
 
 def _morphological_area_opening(mask: np.ndarray, min_area: int) -> np.ndarray:
     """
-    Area opening morphology.
-    Approximates removing small blobs by choosing a structuring element whose area
-    is ~ min_area. This mimics 'keep-largest' behavior in practice.
+    Area opening morphology to remove small blobs.
+
+    Args:
+        mask (np.ndarray): Binary mask to process.
+        min_area (int): Minimum area threshold for blob removal.
+
+    Returns:
+        np.ndarray: Processed mask with small blobs removed.
     """
     if min_area <= 0:
         return mask
@@ -100,6 +129,18 @@ def _post_clean(mask: np.ndarray,
                 open_size: int = 5,
                 close_size: int = 7,
                 min_area: int = 1500) -> np.ndarray:
+    """
+    Post-process mask with morphological operations and area filtering.
+
+    Args:
+        mask (np.ndarray): Binary mask to clean.
+        open_size (int): Size of opening structuring element.
+        close_size (int): Size of closing structuring element.
+        min_area (int): Minimum area threshold for component retention.
+
+    Returns:
+        np.ndarray: Cleaned binary mask.
+    """
     if open_size > 0:
         mask = binary_opening(mask, structure=np.ones((open_size, open_size)))
     if close_size > 0:
@@ -125,11 +166,25 @@ def segment_background(image: np.ndarray,
                                 hue_percentile: float = 92.0,
                                 hue_margin_deg: float = 6.0) -> np.ndarray:
     """
-      1) BG from borders (LAB) -> med, mad.
-      2) L de-shadowing (toward BG L); chroma centered implicitly via med.
-      3) Threshold by high percentile of *border* distances (+ margin).
-      4) Hue fallback (HSV): pixels far in hue (and saturated) also FG.
-      5) Morph-only cleanup.
+    Segment foreground from background using LAB and HSV color-based methods.
+
+    Args:
+        image (np.ndarray): Input image in BGR format.
+        border (int): Width of border pixels for background estimation.
+        dist_percentile (float): Percentile for LAB distance threshold.
+        dist_margin (float): Margin added to LAB distance threshold.
+        min_area (int): Minimum area for morphological filtering.
+        opening_size (int): Size of morphological opening operation.
+        closing_size (int): Size of morphological closing operation.
+        wL (float): Weight for L channel in LAB distance.
+        wA (float): Weight for A channel in LAB distance.
+        wB (float): Weight for B channel in LAB distance.
+        sat_min (float): Minimum saturation threshold for hue-based segmentation.
+        hue_percentile (float): Percentile for hue distance threshold.
+        hue_margin_deg (float): Margin in degrees added to hue distance threshold.
+
+    Returns:
+        np.ndarray: Binary mask where foreground is 1 and background is 0.
     """
     lab = convert_img_to_lab(image).astype(np.float32)
     hsv = convert_img_to_hsv(image).astype(np.float32)
@@ -187,7 +242,19 @@ def run_experiments_on_dataset(image_folder: str,
                                max_images: int = None,
                                output_folder: str = "results/method_color_only/",
                                save_outputs: bool = True) -> List[Dict]:
-    """Run all experiments on the dataset and save outputs."""
+    """
+    Run all experiments on the dataset and save outputs.
+
+    Args:
+        image_folder (str): Path to folder containing input images.
+        experiments_config (List[Dict]): List of experiment configurations with name, func, and params.
+        max_images (int): Maximum number of images to process. None processes all images.
+        output_folder (str): Path to output folder for results.
+        save_outputs (bool): Whether to save output masks, segmented images, and visualizations.
+
+    Returns:
+        List[Dict]: List of experiment results with average metrics and per-image results.
+    """
     # Get image files
     image_files = sorted([f for f in os.listdir(image_folder) if f.lower().endswith('.jpg')])
     if max_images:
@@ -257,7 +324,9 @@ def run_experiments_on_dataset(image_folder: str,
 
                 precision = precision_mask(tp, fp)
                 recall = recall_mask(tp, fn)
-                f1 = f1_mask(tp, fp, fn)
+
+                f1 = 2*((precision*recall)/(precision+recall))
+                print(f"Precision: {precision} | Recal;: {recall} | F1: {f1}")
 
                 metrics = {
                     'precision': precision,
@@ -325,7 +394,7 @@ def run_experiments_on_dataset(image_folder: str,
         if image_results:
             avg_precision = np.mean([r['precision'] for r in image_results])
             avg_recall = np.mean([r['recall'] for r in image_results])
-            avg_f1 = np.mean([r['f1'] for r in image_results])
+            avg_f1 = 2*((avg_precision*avg_recall)/(avg_precision+avg_recall))
 
             exp_summary = {
                 'experiment_name': exp_config['name'],
