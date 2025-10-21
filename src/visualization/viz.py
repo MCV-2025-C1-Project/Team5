@@ -56,7 +56,25 @@ DESC_NAME_TO_FUNC = {
     'Block_Histogram_3D_HSV_2x2': 'block_histogram_3d_hsv_2x2',
     'Block_Histogram_3D_HSV_4x4': 'block_histogram_3d_hsv_4x4',
     'Block_Histogram_3D_HSV_8x8': 'block_histogram_3d_hsv_8x8',
-    'Block_Histogram_3D_HSV_16x16': 'block_histogram_3d_hsv_16x16'
+    'Block_Histogram_3D_HSV_16x16': 'block_histogram_3d_hsv_16x16',
+    'DCT_Grayscale_4x4_8Coeffs': 'dct_grayscale_4x4_8coeffs',
+    'DCT_Grayscale_4x4_16Coeffs': 'dct_grayscale_4x4_16coeffs',
+    'DCT_Grayscale_4x4_32Coeffs': 'dct_grayscale_4x4_32coeffs',
+    'DCT_Grayscale_8x8_8Coeffs': 'dct_grayscale_8x8_8coeffs',
+    'DCT_Grayscale_8x8_16Coeffs': 'dct_grayscale_8x8_16coeffs',
+    'DCT_Grayscale_8x8_32Coeffs': 'dct_grayscale_8x8_32coeffs',
+    'DCT_LAB_4x4_8Coeffs': 'dct_lab_4x4_8coeffs',
+    'DCT_LAB_4x4_16Coeffs': 'dct_lab_4x4_16coeffs',
+    'DCT_LAB_4x4_32Coeffs': 'dct_lab_4x4_32coeffs',
+    'DCT_LAB_8x8_8Coeffs': 'dct_lab_8x8_8coeffs',
+    'DCT_LAB_8x8_16Coeffs': 'dct_lab_8x8_16coeffs',
+    'DCT_LAB_8x8_32Coeffs': 'dct_lab_8x8_32coeffs',
+    'DCT_HSV_4x4_8Coeffs': 'dct_hsv_4x4_8coeffs',
+    'DCT_HSV_4x4_16Coeffs': 'dct_hsv_4x4_16coeffs',
+    'DCT_HSV_4x4_32Coeffs': 'dct_hsv_4x4_32coeffs',
+    'DCT_HSV_8x8_8Coeffs': 'dct_hsv_8x8_8coeffs',
+    'DCT_HSV_8x8_16Coeffs': 'dct_hsv_8x8_16coeffs',
+    'DCT_HSV_8x8_32Coeffs': 'dct_hsv_8x8_32coeffs'
 }
 
 DIST_NAME_TO_FUNC = {
@@ -225,7 +243,7 @@ def generate_comprehensive_analysis(
         for j in range(len(distance_names)):
             ax.text(j, i, f'{map5_matrix[i, j]:.3f}',
                     ha="center", va="center",
-                    color="black", fontweight='bold', fontsize=12)
+                    color="black", fontweight='bold', fontsize=8)
 
     ax.set_title('mAP@5 Performance: All Descriptor-Distance Combinations')
     plt.tight_layout()

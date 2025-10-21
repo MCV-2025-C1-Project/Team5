@@ -50,7 +50,25 @@ ALL_DESCRIPTORS = [
     'block_histogram_3d_hsv_2x2',
     'block_histogram_3d_hsv_4x4',
     'block_histogram_3d_hsv_8x8',
-    'block_histogram_3d_hsv_16x16'
+    'block_histogram_3d_hsv_16x16',
+    'dct_grayscale_4x4_8coeffs',
+    'dct_grayscale_4x4_16coeffs',
+    'dct_grayscale_4x4_32coeffs',
+    'dct_grayscale_8x8_8coeffs',
+    'dct_grayscale_8x8_16coeffs',
+    'dct_grayscale_8x8_32coeffs',
+    'dct_hsv_4x4_8coeffs',
+    'dct_hsv_4x4_16coeffs',
+    'dct_hsv_4x4_32coeffs',
+    'dct_hsv_8x8_8coeffs',
+    'dct_hsv_8x8_16coeffs',
+    'dct_hsv_8x8_32coeffs',
+    'dct_lab_4x4_8coeffs',
+    'dct_lab_4x4_16coeffs',
+    'dct_lab_4x4_32coeffs',
+    'dct_lab_8x8_8coeffs',
+    'dct_lab_8x8_16coeffs',
+    'dct_lab_8x8_32coeffs'
 ]
 
 ALL_DISTANCE_METRICS = [
@@ -107,7 +125,25 @@ DESCRIPTOR_NAMES = {
     'block_histogram_3d_hsv_2x2': 'Block_Histogram_3D_HSV_2X2',
     'block_histogram_3d_hsv_4x4': 'Block_Histogram_3D_HSV_4X4',
     'block_histogram_3d_hsv_8x8': 'Block_Histogram_3D_HSV_8X8',
-    'block_histogram_3d_hsv_16x16': 'Block_Histogram_3D_HSV_16X16'
+    'block_histogram_3d_hsv_16x16': 'Block_Histogram_3D_HSV_16X16',
+    'dct_grayscale_4x4_8coeffs': 'DCT_Grayscale_4x4_8Coeffs',
+    'dct_grayscale_4x4_16coeffs': 'DCT_Grayscale_4x4_16Coeffs',
+    'dct_grayscale_4x4_32coeffs': 'DCT_Grayscale_4x4_32Coeffs',
+    'dct_grayscale_8x8_8coeffs': 'DCT_Grayscale_8x8_8Coeffs',
+    'dct_grayscale_8x8_16coeffs': 'DCT_Grayscale_8x8_16Coeffs',
+    'dct_grayscale_8x8_32coeffs': 'DCT_Grayscale_8x8_32Coeffs',
+    'dct_hsv_4x4_8coeffs': 'DCT_HSV_4x4_8Coeffs',
+    'dct_hsv_4x4_16coeffs': 'DCT_HSV_4x4_16Coeffs',
+    'dct_hsv_4x4_32coeffs': 'DCT_HSV_4x4_32Coeffs',
+    'dct_hsv_8x8_8coeffs': 'DCT_HSV_8x8_8Coeffs',
+    'dct_hsv_8x8_16coeffs': 'DCT_HSV_8x8_16Coeffs',
+    'dct_hsv_8x8_32coeffs': 'DCT_HSV_8x8_32Coeffs',
+    'dct_lab_4x4_8coeffs': 'DCT_LAB_4x4_8Coeffs',
+    'dct_lab_4x4_16coeffs': 'DCT_LAB_4x4_16Coeffs',
+    'dct_lab_4x4_32coeffs': 'DCT_LAB_4x4_32Coeffs',
+    'dct_lab_8x8_8coeffs': 'DCT_LAB_8x8_8Coeffs',
+    'dct_lab_8x8_16coeffs': 'DCT_LAB_8x8_16Coeffs',
+    'dct_lab_8x8_32coeffs': 'DCT_LAB_8x8_32Coeffs'
 }
 
 DISTANCE_NAMES = {

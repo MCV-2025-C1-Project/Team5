@@ -10,7 +10,8 @@ from src.descriptors import (grayscale,
                              dim2,
                              dim3,
                              spatial_pyramid,
-                             block_histogram)
+                             block_histogram,
+                             dct)
 from src.distances import (bhattacharyya,
                            canberra,
                            chi_2,
@@ -80,7 +81,26 @@ DESCRIPTOR_FUNCTIONS = {
     'block_histogram_3d_hsv_2x2': lambda img_path, **kwargs: block_histogram.block_based_histogram_3d_hsv(img_path, grid_size=(2, 2), **kwargs),
     'block_histogram_3d_hsv_4x4': lambda img_path, **kwargs: block_histogram.block_based_histogram_3d_hsv(img_path, grid_size=(4, 4), **kwargs),
     'block_histogram_3d_hsv_8x8': lambda img_path, **kwargs: block_histogram.block_based_histogram_3d_hsv(img_path, grid_size=(8, 8), **kwargs),
-    'block_histogram_3d_hsv_16x16': lambda img_path, **kwargs: block_histogram.block_based_histogram_3d_hsv(img_path, grid_size=(16, 16), **kwargs)
+    'block_histogram_3d_hsv_16x16': lambda img_path, **kwargs: block_histogram.block_based_histogram_3d_hsv(img_path, grid_size=(16, 16), **kwargs),
+    'dct_grayscale_4x4_8coeffs':    lambda img_path, **kwargs: (dct.compute_block_dct_descriptor(img_path, color_space='grayscale', grid_size=(4, 4), zigzag_coeffs=8), None),
+    'dct_grayscale_4x4_16coeffs':   lambda img_path, **kwargs: (dct.compute_block_dct_descriptor(img_path, color_space='grayscale', grid_size=(4, 4), zigzag_coeffs=16), None),
+    'dct_grayscale_4x4_32coeffs':    lambda img_path, **kwargs: (dct.compute_block_dct_descriptor(img_path, color_space='grayscale', grid_size=(4, 4), zigzag_coeffs=32), None),
+    'dct_grayscale_8x8_8coeffs':   lambda img_path, **kwargs: (dct.compute_block_dct_descriptor(img_path, color_space='grayscale', grid_size=(8, 8), zigzag_coeffs=8), None),
+    'dct_grayscale_8x8_16coeffs':   lambda img_path, **kwargs: (dct.compute_block_dct_descriptor(img_path, color_space='grayscale', grid_size=(8, 8), zigzag_coeffs=16), None),
+    'dct_grayscale_8x8_32coeffs':   lambda img_path, **kwargs: (dct.compute_block_dct_descriptor(img_path, color_space='grayscale', grid_size=(8, 8), zigzag_coeffs=32), None),
+    'dct_hsv_4x4_8coeffs':    lambda img_path, **kwargs: (dct.compute_block_dct_descriptor(img_path, color_space='hsv', grid_size=(4, 4), zigzag_coeffs=8), None),
+    'dct_hsv_4x4_16coeffs':   lambda img_path, **kwargs: (dct.compute_block_dct_descriptor(img_path, color_space='hsv', grid_size=(4, 4), zigzag_coeffs=16), None),
+    'dct_hsv_4x4_32coeffs':    lambda img_path, **kwargs: (dct.compute_block_dct_descriptor(img_path, color_space='hsv', grid_size=(4, 4), zigzag_coeffs=32), None),
+    'dct_hsv_8x8_8coeffs':   lambda img_path, **kwargs: (dct.compute_block_dct_descriptor(img_path, color_space='hsv', grid_size=(8, 8), zigzag_coeffs=8), None),
+    'dct_hsv_8x8_16coeffs':   lambda img_path, **kwargs: (dct.compute_block_dct_descriptor(img_path, color_space='hsv', grid_size=(8, 8), zigzag_coeffs=16), None),
+    'dct_hsv_8x8_32coeffs':   lambda img_path, **kwargs: (dct.compute_block_dct_descriptor(img_path, color_space='hsv', grid_size=(8, 8), zigzag_coeffs=32), None),
+    'dct_lab_4x4_8coeffs':    lambda img_path, **kwargs: (dct.compute_block_dct_descriptor(img_path, color_space='lab', grid_size=(4, 4), zigzag_coeffs=8), None),
+    'dct_lab_4x4_16coeffs':   lambda img_path, **kwargs: (dct.compute_block_dct_descriptor(img_path, color_space='lab', grid_size=(4, 4), zigzag_coeffs=16), None),
+    'dct_lab_4x4_32coeffs':    lambda img_path, **kwargs: (dct.compute_block_dct_descriptor(img_path, color_space='lab', grid_size=(4, 4), zigzag_coeffs=32), None),
+    'dct_lab_8x8_8coeffs':   lambda img_path, **kwargs: (dct.compute_block_dct_descriptor(img_path, color_space='lab', grid_size=(8, 8), zigzag_coeffs=8), None),
+    'dct_lab_8x8_16coeffs':   lambda img_path, **kwargs: (dct.compute_block_dct_descriptor(img_path, color_space='lab', grid_size=(8, 8), zigzag_coeffs=16), None),
+    'dct_lab_8x8_32coeffs':   lambda img_path, **kwargs: (dct.compute_block_dct_descriptor(img_path, color_space='lab', grid_size=(8, 8), zigzag_coeffs=32), None),
+    
 }
 
 

@@ -73,7 +73,15 @@ def main():
                  'block_histogram_2d_lab', 'block_histogram_2d_hsv_2x2',
                  'block_histogram_2d_hsv_4x4', 'block_histogram_2d_hsv_8x8',
                  'block_histogram_2d_hsv_16x16', 'block_histogram_3d_lab', 'block_histogram_3d_hsv_2x2',
-                 'block_histogram_3d_hsv_4x4', 'block_histogram_3d_hsv_8x8', 'block_histogram_3d_hsv_16x16'],
+                 'block_histogram_3d_hsv_4x4', 'block_histogram_3d_hsv_8x8', 'block_histogram_3d_hsv_16x16',
+                 'dct_grayscale_4x4_8coeffs', 'dct_grayscale_4x4_16coeffs', 'dct_grayscale_4x4_32coeffs',
+                 'dct_grayscale_8x8_8coeffs', 'dct_grayscale_8x8_16coeffs', 'dct_grayscale_8x8_32coeffs',
+                 'dct_hsv_4x4_8coeffs', 'dct_hsv_4x4_16coeffs', 'dct_hsv_4x4_32coeffs',
+                 'dct_hsv_8x8_8coeffs', 'dct_hsv_8x8_16coeffs', 'dct_hsv_8x8_32coeffs',
+                 'dct_lab_4x4_8coeffs', 'dct_lab_4x4_16coeffs', 'dct_lab_4x4_32coeffs',
+                 'dct_lab_8x8_8coeffs', 'dct_lab_8x8_16coeffs', 'dct_lab_8x8_32coeffs',
+                 'dct_4x4_8coeffs', 'dct_4x4_16coeffs', 'dct_4x4_32coeffs',
+                 'dct_8x8_8coeffs', 'dct_8x8_16coeffs', 'dct_8x8_32coeffs'],
         help='Specific descriptors to evaluate (default: all). Multiple allowed.'
     )
 
