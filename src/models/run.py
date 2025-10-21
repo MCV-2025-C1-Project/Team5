@@ -81,7 +81,11 @@ def main():
                  'dct_lab_4x4_8coeffs', 'dct_lab_4x4_16coeffs', 'dct_lab_4x4_32coeffs',
                  'dct_lab_8x8_8coeffs', 'dct_lab_8x8_16coeffs', 'dct_lab_8x8_32coeffs',
                  'dct_4x4_8coeffs', 'dct_4x4_16coeffs', 'dct_4x4_32coeffs',
-                 'dct_8x8_8coeffs', 'dct_8x8_16coeffs', 'dct_8x8_32coeffs'],
+                 'dct_8x8_8coeffs', 'dct_8x8_16coeffs', 'dct_8x8_32coeffs',
+                 'lbp_gray_s1_4x4', 'lbp_gray_ms2_4x4', 'lbp_gray_ms2_8x8',
+                 'lbp_lab_ms2_4x4', 'lbp_lab_ms2_8x8', 'lbp_hsv_ms2_4x4',
+                 'lbp_hsv_ms2_8x8'
+                 ],
         help='Specific descriptors to evaluate (default: all). Multiple allowed.'
     )
 

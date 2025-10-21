@@ -11,7 +11,8 @@ from src.descriptors import (grayscale,
                              dim3,
                              spatial_pyramid,
                              block_histogram,
-                             dct)
+                             dct,
+                             lbp)
 from src.distances import (bhattacharyya,
                            canberra,
                            chi_2,
@@ -100,7 +101,13 @@ DESCRIPTOR_FUNCTIONS = {
     'dct_lab_8x8_8coeffs':   lambda img_path, **kwargs: (dct.compute_block_dct_descriptor(img_path, color_space='lab', grid_size=(8, 8), zigzag_coeffs=8), None),
     'dct_lab_8x8_16coeffs':   lambda img_path, **kwargs: (dct.compute_block_dct_descriptor(img_path, color_space='lab', grid_size=(8, 8), zigzag_coeffs=16), None),
     'dct_lab_8x8_32coeffs':   lambda img_path, **kwargs: (dct.compute_block_dct_descriptor(img_path, color_space='lab', grid_size=(8, 8), zigzag_coeffs=32), None),
-    
+    'lbp_gray_s1_4x4':   lambda img_path, **kwargs: (lbp.compute_lbp_descriptor(img_path, color_space='grayscale', grid_size=(4, 4), scales=[(1, 8)]), None),
+    'lbp_gray_ms2_4x4':  lambda img_path, **kwargs: (lbp.compute_lbp_descriptor(img_path, color_space='grayscale', grid_size=(4, 4), scales=[(1, 8), (3, 24)]), None),
+    'lbp_gray_ms2_8x8':  lambda img_path, **kwargs: (lbp.compute_lbp_descriptor(img_path, color_space='grayscale', grid_size=(8, 8), scales=[(1, 8), (3, 24)]), None),
+    'lbp_lab_ms2_4x4':   lambda img_path, **kwargs: (lbp.compute_lbp_descriptor(img_path, color_space='lab', grid_size=(4, 4), scales=[(1, 8), (3, 24)]), None),
+    'lbp_lab_ms2_8x8':   lambda img_path, **kwargs: (lbp.compute_lbp_descriptor(img_path, color_space='lab', grid_size=(8, 8), scales=[(1, 8), (3, 24)]), None),
+    'lbp_hsv_ms2_4x4':   lambda img_path, **kwargs: (lbp.compute_lbp_descriptor(img_path, color_space='hsv', grid_size=(4, 4), scales=[(1, 8), (3, 24)]), None),
+    'lbp_hsv_ms2_8x8':   lambda img_path, **kwargs: (lbp.compute_lbp_descriptor(img_path, color_space='hsv', grid_size=(8, 8), scales=[(1, 8), (3, 24)]), None),
 }
 
 

@@ -74,7 +74,14 @@ DESC_NAME_TO_FUNC = {
     'DCT_HSV_4x4_32Coeffs': 'dct_hsv_4x4_32coeffs',
     'DCT_HSV_8x8_8Coeffs': 'dct_hsv_8x8_8coeffs',
     'DCT_HSV_8x8_16Coeffs': 'dct_hsv_8x8_16coeffs',
-    'DCT_HSV_8x8_32Coeffs': 'dct_hsv_8x8_32coeffs'
+    'DCT_HSV_8x8_32Coeffs': 'dct_hsv_8x8_32coeffs',
+    'LBP_Gray_S1_4x4':   'lbp_gray_s1_4x4',
+    'LBP_Gray_MS2_4x4':  'lbp_gray_ms2_4x4',
+    'LBP_Gray_MS2_8x8':  'lbp_gray_ms2_8x8',
+    'LBP_LAB_MS2_4x4':   'lbp_lab_ms2_4x4',
+    'LBP_LAB_MS2_8x8':   'lbp_lab_ms2_8x8',
+    'LBP_HSV_MS2_8x8':   'lbp_hsv_ms2_8x8',
+    'LBP_HSV_MS2_4x4':   'lbp_hsv_ms2_4x4',
 }
 
 DIST_NAME_TO_FUNC = {
