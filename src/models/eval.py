@@ -222,15 +222,24 @@ def evaluate_all_descriptors_and_distances(
         logger.info(f"DESCRIPTOR: {DESCRIPTOR_NAMES[descriptor]} "
                     f"({desc_idx + 1}/{len(descriptors)})")
 
+        # Create system once per descriptor with caching enabled
+        # The first distance metric will build the database, the rest will reuse it
+        system = None
+
         for dist_metric in distance_metrics:
             combination_count += 1
             logger.info(
                 f"[{combination_count}/{total_combinations}] "
                 f"{DESCRIPTOR_NAMES[descriptor]} + {DISTANCE_NAMES[dist_metric]}")
 
-            # Initialize system
-            system = ComputeImageHistogram(
-                museum_dir, dist_metric, descriptor, values_per_bin)
+            # Initialize system with cache (reuses database if descriptor unchanged)
+            if system is None:
+                system = ComputeImageHistogram(
+                    museum_dir, dist_metric, descriptor, values_per_bin)
+            else:
+                # Reuse existing system, only update distance metric
+                system.distance_metric = dist_metric
+                logger.info(f"Reusing cached database for {DESCRIPTOR_NAMES[descriptor]}")
 
             # Retrieve for all queries
             all_predicted = []
