@@ -22,6 +22,19 @@ def convert_img_to_ycbcr(img_bgr: np.ndarray) -> np.ndarray:
     return cv2.cvtColor(img_bgr, cv2.COLOR_BGR2YCrCb)
 
 
+def reconvert_img_to_bgr(img_bgr: np.ndarray) -> np.ndarray:
+    """
+    Convert a YCbCr image back to BGR.
+
+    Args:
+        img (np.ndarray): Input image in YCbCr format.
+
+    Returns:
+        np.ndarray: BGR image.
+    """
+    return cv2.cvtColor(img_bgr, cv2.COLOR_YCrCb2BGR)
+
+
 def compute_ycbcr_histogram_from_array(
     img_bgr: np.ndarray,
     values_per_bin: int = 1,
@@ -59,6 +72,7 @@ def compute_ycbcr_histogram_from_array(
     concat_hist = np.concatenate([hist_y, hist_cb, hist_cr])
 
     return concat_hist, bin_edges
+
 
 def compute_ycbcr_histogram(
     img_path: str,

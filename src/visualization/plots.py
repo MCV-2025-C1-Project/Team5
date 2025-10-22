@@ -7,7 +7,7 @@ import numpy as np
 import cv2
 
 
-def display_image(img_bgr: np.ndarray) -> None:
+def display_image(img_bgr: np.ndarray, ax=None) -> None:
     """
     Display an image using Matplotlib.
 
@@ -15,8 +15,12 @@ def display_image(img_bgr: np.ndarray) -> None:
         img (np.ndarray): Image array to display.
     """
     img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
-    plt.imshow(img_rgb, cmap="gray" if img_rgb.ndim == 2 else None)
-    plt.show()
+    if ax:
+        ax.imshow(img_rgb, cmap="gray" if img_rgb.ndim == 2 else None)
+        return ax
+    else:
+        plt.imshow(img_rgb, cmap="gray" if img_rgb.ndim == 2 else None)
+        plt.show()
 
 
 def display_histogram(hist: np.ndarray, bin_edges: np.ndarray) -> None:
