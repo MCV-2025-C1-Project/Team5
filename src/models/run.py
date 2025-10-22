@@ -84,7 +84,18 @@ def main():
                  'dct_8x8_8coeffs', 'dct_8x8_16coeffs', 'dct_8x8_32coeffs',
                  'lbp_gray_s1_4x4', 'lbp_gray_ms2_4x4', 'lbp_gray_ms2_8x8',
                  'lbp_lab_ms2_4x4', 'lbp_lab_ms2_8x8', 'lbp_hsv_ms2_4x4',
-                 'lbp_hsv_ms2_8x8'
+                 'lbp_hsv_ms2_8x8', 'haar_grayscale_lvl1', 'haar_grayscale_lvl2', 'haar_grayscale_lvl3', 
+                 'haar_hsv_lvl1', 'haar_hsv_lvl2', 'haar_hsv_lvl3', 
+                 'bior44_grayscale_lvl1', 'bior44_grayscale_lvl2', 'bior44_grayscale_lvl3', 
+                 'bior44_hsv_lvl1', 'bior44_hsv_lvl2', 'bior44_hsv_lvl3',
+                 'block_haar_grayscale_4x4_lvl1', 'block_haar_grayscale_8x8_lvl1', 'block_haar_grayscale_4x4_lvl2', 
+                 'block_haar_grayscale_8x8_lvl2', 'block_haar_grayscale_4x4_lvl3', 'block_haar_grayscale_8x8_lvl3',
+                 'block_haar_hsv_4x4_lvl1', 'block_haar_hsv_8x8_lvl1', 'block_haar_hsv_4x4_lvl2', 
+                 'block_haar_hsv_8x8_lvl2', 'block_haar_hsv_4x4_lvl3', 'block_haar_hsv_8x8_lvl3',
+                 'block_bior44_grayscale_4x4_lvl1', 'block_bior44_grayscale_8x8_lvl1', 'block_bior44_grayscale_4x4_lvl2', 
+                 'block_bior44_grayscale_8x8_lvl2', 'block_bior44_grayscale_4x4_lvl3', 'block_bior44_grayscale_8x8_lvl3',
+                 'block_bior44_hsv_4x4_lvl1', 'block_bior44_hsv_8x8_lvl1', 'block_bior44_hsv_4x4_lvl2', 
+                 'block_bior44_hsv_8x8_lvl2', 'block_bior44_hsv_4x4_lvl3', 'block_bior44_hsv_8x8_lvl3'
                  ],
         help='Specific descriptors to evaluate (default: all). Multiple allowed.'
     )
