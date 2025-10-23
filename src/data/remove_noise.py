@@ -4,6 +4,8 @@ import numpy as np
 import pywt
 from scipy.ndimage import gaussian_filter, median_filter
 
+from src.descriptors import ycbcr
+
 
 def apply_gaussian_filter(img):
     if len(img.shape) > 2:
@@ -100,6 +102,11 @@ def _cycle_spin_gray(x01: np.ndarray, spins: int, fn) -> np.ndarray:
     return acc / (spins * spins)
 
 
+def _match_shape(ref, arr):
+    h, w = ref.shape[:2]
+    return arr[:h, :w]
+
+
 def denoise_wavelet(img_bgr: np.ndarray,
                     wavelet: str = "db2",
                     levels: int | None = None,
@@ -129,15 +136,8 @@ def denoise_wavelet(img_bgr: np.ndarray,
     Returns:
       Denoised BGR image (uint8).
     """
-    # Normalize to uint8 BGR
-    if img_bgr.dtype != np.uint8:
-        x = np.clip(img_bgr, 0, 1).astype(np.float32)
-        img_bgr_u8 = (x * 255.0 + 0.5).astype(np.uint8)
-    else:
-        img_bgr_u8 = img_bgr
-
     # BGR → YCrCb
-    ycrcb = cv2.cvtColor(img_bgr_u8, cv2.COLOR_BGR2YCrCb)
+    ycrcb = ycbcr.convert_img_to_ycbcr(img_bgr)
     Y_u8, Cr_u8, Cb_u8 = cv2.split(ycrcb)
 
     # Prepare [0,1] floats
@@ -152,6 +152,7 @@ def denoise_wavelet(img_bgr: np.ndarray,
         return den
 
     Y_den = _cycle_spin_gray(Y, spins_luma, _den_luma)
+    Y_den = _match_shape(Y,  Y_den)
 
     # Chroma denoise (optional and lighter)
     if chroma_strength > 0:
@@ -163,6 +164,9 @@ def denoise_wavelet(img_bgr: np.ndarray,
             return den
         Cr_den = _cycle_spin_gray(Cr, spins_chroma, _den_ch)
         Cb_den = _cycle_spin_gray(Cb, spins_chroma, _den_ch)
+        # ensure to keep the same shape as the original img
+        Cr_den = _match_shape(Cr, Cr_den)
+        Cb_den = _match_shape(Cb, Cb_den)
         # Blend to avoid color bleeding
         Cr_out = (1 - chroma_strength) * Cr + chroma_strength * Cr_den
         Cb_out = (1 - chroma_strength) * Cb + chroma_strength * Cb_den
@@ -175,5 +179,5 @@ def denoise_wavelet(img_bgr: np.ndarray,
         (np.clip(Cr_out, 0, 1) * 255).astype(np.uint8),
         (np.clip(Cb_out, 0, 1) * 255).astype(np.uint8),
     ])
-    bgr_out = cv2.cvtColor(ycrcb_out, cv2.COLOR_YCrCb2BGR)
+    bgr_out = ycbcr.reconvert_img_to_bgr(ycrcb_out)
     return bgr_out
