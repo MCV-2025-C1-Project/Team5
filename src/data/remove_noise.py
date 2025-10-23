@@ -81,6 +81,7 @@ def _levels_heuristic(h: int, w: int) -> int:
 
 def denoise_wavelet_gray(img_gray01: np.ndarray,
                          wavelet: str = "db2",
+                         sigma: float | None = None,
                          levels: int | None = None,
                          rule: str = "bayes") -> tuple[np.ndarray, float]:
     """Wavelet denoise (grayscale) with BayesShrink/VisuShrink; returns (denoised, sigma).
@@ -98,13 +99,16 @@ def denoise_wavelet_gray(img_gray01: np.ndarray,
     h, w = x.shape
     if levels is None:
         levels = _levels_heuristic(h, w)
+        print("levels:", levels)
 
     coeffs = pywt.wavedec2(x, wavelet=wavelet, level=levels, mode="symmetric")
     cA, detail_levels = coeffs[0], coeffs[1:]
 
     # Noise estimate from finest diagonal band
     cH1, cV1, cD1 = detail_levels[-1]
-    sigma = _mad_sigma(cD1)
+    if sigma is None:
+        sigma = _mad_sigma(cD1)
+        print("sigma:", sigma)
 
     new_details = []
     N = x.size
@@ -152,6 +156,7 @@ def _match_shape(ref, arr):
 
 def denoise_wavelet(img_bgr: np.ndarray,
                     wavelet: str = "db2",
+                    sigma: float | None = None,
                     levels: int | None = None,
                     luma_rule: str = "bayes",
                     chroma_rule: str = "bayes",
@@ -166,7 +171,7 @@ def denoise_wavelet(img_bgr: np.ndarray,
       - Convert back to BGR.
 
     Args:
-      img_bgr: Input image (uint8 or float in [0,1]).
+      img_bgr: Input image (uint8).
       wavelet: Wavelet family for all channels (e.g., 'db2', 'sym4').
       levels: Wavelet levels; if None, chosen per-channel heuristically.
       luma_rule: 'bayes' or 'visu' for Y channel.
@@ -191,7 +196,7 @@ def denoise_wavelet(img_bgr: np.ndarray,
     # Luma denoise (stronger)
     def _den_luma(gray01):
         den, _ = denoise_wavelet_gray(
-            gray01, wavelet=wavelet, levels=levels, rule=luma_rule)
+            gray01, wavelet=wavelet, levels=levels, sigma=sigma, rule=luma_rule)
         return den
 
     Y_den = _cycle_spin_gray(Y, spins_luma, _den_luma)
@@ -203,7 +208,7 @@ def denoise_wavelet(img_bgr: np.ndarray,
             lev = _levels_heuristic(
                 *gray01.shape) if levels is None else max(1, levels - 1)
             den, _ = denoise_wavelet_gray(
-                gray01, wavelet=wavelet, levels=lev, rule=chroma_rule)
+                gray01, wavelet=wavelet, levels=lev, sigma=sigma, rule=chroma_rule)
             return den
         Cr_den = _cycle_spin_gray(Cr, spins_chroma, _den_ch)
         Cb_den = _cycle_spin_gray(Cb, spins_chroma, _den_ch)

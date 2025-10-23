@@ -91,6 +91,21 @@ def add_noise(
         uniform_noise = np.random.uniform(-amount, amount, img.shape)
         noisy = img + uniform_noise
 
+    elif noise_type == "impulse":
+        # More general impulse noise: random-valued pixel corruption
+        noisy = img.copy()
+        num_impulse = int(amount * img.shape[0] * img.shape[1])
+
+        # random pixel coordinates
+        ys = np.random.randint(0, img.shape[0], num_impulse)
+        xs = np.random.randint(0, img.shape[1], num_impulse)
+
+        # assign random colors (per channel if color image)
+        if img.ndim == 3:
+            noisy[ys, xs, :] = np.random.rand(num_impulse, img.shape[2])
+        else:
+            noisy[ys, xs] = np.random.rand(num_impulse)
+
     else:
         raise ValueError(f"Unsupported noise type: {noise_type}")
 

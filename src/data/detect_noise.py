@@ -8,7 +8,11 @@ from scipy.ndimage import laplace
 from src.descriptors import ycbcr, grayscale
 
 
-def noise_detector_laplace(img_bgr: np.ndarray) -> bool:
+def noise_detector_laplace(
+    img_bgr: np.ndarray,
+    threshold: int = 45,
+    convert_to_ycbcr: bool = True
+) -> bool:
     """Detects image noise using the Laplacian operator on the Y (luma) channel.
 
     The function computes the Laplacian of the luminance component in YCbCr space
@@ -21,24 +25,32 @@ def noise_detector_laplace(img_bgr: np.ndarray) -> bool:
     Returns:
         bool: True if the image is considered noisy, False otherwise.
     """
-    # convert to YCbCr
-    img_ycbcr = ycbcr.convert_img_to_ycbcr(img_bgr)
+    if convert_to_ycbcr:
+        # convert to YCbCr
+        img_ycbcr = ycbcr.convert_img_to_ycbcr(img_bgr)
+        # keep the y channel onyly
+        img = img_ycbcr[:, :, 0]
+    else:
+        img = grayscale.convert_img_to_gray_scale(img)
 
     # convert to integers 32 bits to be able to represent the differences
-    img_y = img_ycbcr[:, :, 0].astype(np.int32)
+    img = img.astype(np.int32)
 
-    # compute gradient of the clear images
-    laplace_img_y = laplace(img_y)
+    # compute laplacian of the image
+    laplace_img = laplace(img)
+    laplace_img = np.abs(laplace_img.ravel())
 
-    laplace_img = np.abs(laplace_img_y.ravel())
-
-    if np.quantile(laplace_img, .75) < 45:  # no noise
+    if np.quantile(laplace_img, .75) < threshold:  # no noise
         return False
     else:  # noise
         return True
 
 
-def noise_detector_grad(img_bgr: np.ndarray) -> bool:
+def noise_detector_grad(
+    img_bgr: np.ndarray,
+    threshold: float = 20.0,
+    convert_to_ycbcr: bool = True
+) -> bool:
     """Detects image noise by analyzing first- and second-order gradients.
 
     The detector computes horizontal and vertical gradients of the Y channel
@@ -51,15 +63,20 @@ def noise_detector_grad(img_bgr: np.ndarray) -> bool:
     Returns:
         bool: True if the image is considered noisy, False otherwise.
     """
-    # convert to YCbCr
-    img_ycbcr = ycbcr.convert_img_to_ycbcr(img_bgr)
+    if convert_to_ycbcr:
+        # convert to YCbCr
+        img_ycbcr = ycbcr.convert_img_to_ycbcr(img_bgr)
+        # keep the y channel onyly
+        img = img_ycbcr[:, :, 0]
+    else:
+        img = grayscale.convert_img_to_gray_scale(img_bgr)
 
     # convert to integers 32 bits to be able to represent the differences
-    img_y = img_ycbcr[:, :, 0].astype(np.int32)
+    img = img.astype(np.int32)
 
-    # compute gradient of the clear images
-    grad_i_img_y = img_y[1:, :] - img_y[:-1, :]
-    grad_j_img_y = img_y[:, 1:] - img_y[:, :-1]
+    # compute gradient of the image
+    grad_i_img_y = img[1:, :] - img[:-1, :]
+    grad_j_img_y = img[:, 1:] - img[:, :-1]
 
     # difference among consecutive values of gradients
     diff_1_grad_i = grad_i_img_y[1:, :] - grad_i_img_y[:-1, :]
@@ -68,14 +85,17 @@ def noise_detector_grad(img_bgr: np.ndarray) -> bool:
     diff_1_grad = np.abs(
         np.concat((diff_1_grad_i.ravel(), diff_1_grad_j.ravel())))
 
-    if np.quantile(diff_1_grad, .75) < 20.0:  # no noise
+    if np.quantile(diff_1_grad, .75) < threshold:  # no noise
         return False
     else:  # noise
         return True
 
 
-def estimate_noise_wavelet(img: np.ndarray, threshold: float = 5
-                           ) -> tuple[float, bool]:
+def estimate_noise_wavelet(
+    img: np.ndarray,
+    threshold: float = 5,
+    convert_to_ycbcr: bool = True
+) -> tuple[float, bool]:
     """Estimates noise level using a single-level wavelet transform.
 
     The diagonal detail coefficients of a Haar ('db1') wavelet are used to
@@ -92,16 +112,26 @@ def estimate_noise_wavelet(img: np.ndarray, threshold: float = 5
             - Estimated noise standard deviation (float).
             - Boolean flag indicating if the image is noisy.
     """
-    gray = grayscale.convert_img_to_gray_scale(img)
-    coeffs = pywt.dwt2(gray, 'db1')
+    if convert_to_ycbcr:
+        # convert to YCbCr
+        img_ycbcr = ycbcr.convert_img_to_ycbcr(img)
+        # keep the y channel onyly
+        img = img_ycbcr[:, :, 0]
+    else:
+        img = grayscale.convert_img_to_gray_scale(img)
+
+    coeffs = pywt.dwt2(img, 'db1')
     cA, (cH, cV, cD) = coeffs
     # Use diagonal detail coefficients
     sigma = np.median(np.abs(cD)) / 0.6745  # estimated noise std
     return sigma, sigma > threshold  # True = noisy
 
 
-def estimate_noise_fft(img: np.ndarray, threshold: float = 3.5
-                       ) -> tuple[float, bool]:
+def estimate_noise_fft(
+    img: np.ndarray,
+    threshold: float = 3.5,
+    convert_to_ycbcr: bool = True
+) -> tuple[float, bool]:
     """Estimates noise by comparing high- and low-frequency spectral energy.
 
     Performs a 2D FFT of the grayscale image and computes the ratio of energy
@@ -118,13 +148,19 @@ def estimate_noise_fft(img: np.ndarray, threshold: float = 3.5
             - Ratio of high- to low-frequency energy (float).
             - Boolean flag indicating if the image is noisy.
     """
-    # Convert to grayscale
-    gray = grayscale.convert_img_to_gray_scale(img)
-    f = fftshift(fft2(gray))
+    if convert_to_ycbcr:
+        # convert to YCbCr
+        img_ycbcr = ycbcr.convert_img_to_ycbcr(img)
+        # keep the y channel onyly
+        img = img_ycbcr[:, :, 0]
+    else:
+        img = grayscale.convert_img_to_gray_scale(img)
+
+    f = fftshift(fft2(img))
     magnitude = np.abs(f)
 
     # Split spectrum in low vs high frequencies
-    h, w = gray.shape
+    h, w = img.shape
     center = (h // 2, w // 2)
     r = min(center) // 4  # low-frequency radius
     y, x = np.ogrid[:h, :w]
