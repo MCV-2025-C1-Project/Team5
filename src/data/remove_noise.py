@@ -7,18 +7,61 @@ from scipy.ndimage import gaussian_filter, median_filter
 from src.descriptors import ycbcr
 
 
-def apply_gaussian_filter(img):
+def apply_gaussian_filter(img: np.ndarray) -> np.ndarray:
+    """Apply a Gaussian filter to an image.
+
+    Applies a Gaussian smoothing filter to reduce noise and detail. 
+    If the input image has multiple channels, the filter is applied 
+    along the first two spatial axes.
+
+    Args:
+        img (np.ndarray): Input grayscale or color image.
+
+    Returns:
+        np.ndarray: Denoised image after Gaussian filtering.
+    """
     if len(img.shape) > 2:
         return gaussian_filter(img, sigma=1, radius=2, axes=(0, 1))
     else:
         return gaussian_filter(img, sigma=1, radius=2)
 
 
-def apply_median_filter(img):
+def apply_median_filter(img: np.ndarray) -> np.ndarray:
+    """Apply a median filter to an image.
+
+    Performs median filtering to remove impulsive (salt-and-pepper) noise.
+    If the image has multiple channels, the filter is applied over the 
+    first two spatial dimensions.
+
+    Args:
+        img (np.ndarray): Input grayscale or color image.
+
+    Returns:
+        np.ndarray: Denoised image after median filtering.
+    """
     if len(img.shape) > 2:
         return median_filter(img, size=3, axes=(0, 1))
     else:
         return median_filter(img, size=3)
+
+
+def apply_median_filter_ycbcr(img_bgr: np.ndarray) -> np.ndarray:
+    """Apply a median filter in the YCbCr color space.
+
+    Converts the input BGR image to YCbCr, applies median filtering 
+    on each channel, and converts the result back to BGR. 
+    This approach helps preserve color consistency while denoising.
+
+    Args:
+        img_bgr (np.ndarray): Input image in BGR color space.
+
+    Returns:
+        np.ndarray: Denoised image in BGR color space.
+    """
+    img_ycbcr = ycbcr.convert_img_to_ycbcr(img_bgr)
+    filtered_img_ycbcr = apply_median_filter(img_ycbcr)
+    filtered_img_bgr = ycbcr.reconvert_img_to_bgr(filtered_img_ycbcr)
+    return filtered_img_bgr
 
 
 def _mad_sigma(band: np.ndarray) -> float:

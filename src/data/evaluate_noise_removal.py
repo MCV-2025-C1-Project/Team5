@@ -1,15 +1,40 @@
-import cv2
 import numpy as np
 from skimage.metrics import peak_signal_noise_ratio, structural_similarity
 
 
 # METRICS
 
-def compute_psne(img_gt, img):
+def compute_psne(img_gt: np.ndarray, img: np.ndarray) -> float:
+    """Compute the Peak Signal-to-Noise Ratio (PSNR) between two images.
+
+    Measures the ratio between the maximum possible power of a signal 
+    (the ground truth image) and the power of corrupting noise 
+    (the difference between the ground truth and the test image).
+
+    Args:
+        img_gt (np.ndarray): Ground truth reference image.
+        img (np.ndarray): Denoised or reconstructed image.
+
+    Returns:
+        float: PSNR value in decibels (dB).
+    """
     return peak_signal_noise_ratio(img_gt, img)
 
 
-def compute_ssim(img_gt, img):
+def compute_ssim(img_gt: np.ndarray, img: np.ndarray) -> float:
+    """Compute the Structural Similarity Index (SSIM) between two images.
+
+    Evaluates the perceptual similarity between the ground truth 
+    and test images based on luminance, contrast, and structure.
+    Automatically handles multi-channel images.
+
+    Args:
+        img_gt (np.ndarray): Ground truth reference image.
+        img (np.ndarray): Denoised or reconstructed image.
+
+    Returns:
+        float: SSIM value ranging from -1 to 1 (higher is better).
+    """
     if len(img.shape) > 2:
         return structural_similarity(img_gt, img, channel_axis=2)
     else:
@@ -19,7 +44,13 @@ def compute_ssim(img_gt, img):
 # Noise addition
 
 
-def add_noise(img: np.ndarray, noise_type: str = "gaussian", amount: float = 0.02, mean: float = 0.0, var: float = 0.01) -> np.ndarray:
+def add_noise(
+        img: np.ndarray,
+        noise_type: str = "gaussian",
+        amount: float = 0.02,
+        mean: float = 0.0,
+        var: float = 0.01
+) -> np.ndarray:
     """
     Add different types of noise to an image.
 

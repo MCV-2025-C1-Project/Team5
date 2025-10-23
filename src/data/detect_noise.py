@@ -5,10 +5,10 @@ import numpy as np
 from scipy.ndimage import laplace
 
 
-from src.descriptors import hsv, lab, ycbcr, grayscale
+from src.descriptors import ycbcr, grayscale
 
 
-def noise_detector_laplace(img_bgr):
+def noise_detector_laplace(img_bgr: np.ndarray) -> bool:
     """Detects image noise using the Laplacian operator on the Y (luma) channel.
 
     The function computes the Laplacian of the luminance component in YCbCr space
@@ -38,7 +38,7 @@ def noise_detector_laplace(img_bgr):
         return True
 
 
-def noise_detector_grad(img_bgr):
+def noise_detector_grad(img_bgr: np.ndarray) -> bool:
     """Detects image noise by analyzing first- and second-order gradients.
 
     The detector computes horizontal and vertical gradients of the Y channel
@@ -74,7 +74,8 @@ def noise_detector_grad(img_bgr):
         return True
 
 
-def estimate_noise_wavelet(img, threshold=5):
+def estimate_noise_wavelet(img: np.ndarray, threshold: float = 5
+                           ) -> tuple[float, bool]:
     """Estimates noise level using a single-level wavelet transform.
 
     The diagonal detail coefficients of a Haar ('db1') wavelet are used to
@@ -99,7 +100,8 @@ def estimate_noise_wavelet(img, threshold=5):
     return sigma, sigma > threshold  # True = noisy
 
 
-def estimate_noise_fft(img, threshold=3.5):
+def estimate_noise_fft(img: np.ndarray, threshold: float = 3.5
+                       ) -> tuple[float, bool]:
     """Estimates noise by comparing high- and low-frequency spectral energy.
 
     Performs a 2D FFT of the grayscale image and computes the ratio of energy
