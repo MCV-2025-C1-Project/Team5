@@ -32,6 +32,8 @@ To learn more about the experimentation process and the choice of optimal parame
 - **Background Removal:** Automatically segments the painting from its background using robust color statistics and morphological filtering.  
 
 - **Multiple Image Descriptors:** Extract diverse visual representations capturing color, texture, and spatial information.  
+  
+  **Color-based descriptors:**
   - Grayscale Histogram
   - RGB Histogram
   - HSV Histogram
@@ -41,6 +43,11 @@ To learn more about the experimentation process and the choice of optimal parame
   - 3 Dimension Histogram
   - Block-based Histogram
   - Spatial Pyramid Histogram
+  
+  **Texture-based descriptors:**
+  - DCT (Discrete Cosine Transform) - Block-based frequency domain features with zigzag coefficient extraction
+  - LBP (Local Binary Patterns) - Multiscale texture patterns capturing local intensity variations
+  - Wavelet Transform (DWT) - Multi-resolution analysis with statistical features from wavelet subbands
 
 - **Multiple Distance Metrics:** Measures similarity between images using diverse statistical and geometric criteria.
   - Euclidean Distance
@@ -193,10 +200,18 @@ If it is desired to set different hyperparameter configurations, it is also poss
 
 **Key Features**
 
+**Color-based descriptors:**
 - Supports multiple color spaces: Grayscale, RGB, HSV, Lab, and YCbCr.
 - Supports agregation of consecutive values of the histogram in the same bin.
 - Supports color representation as 2D and 3D histograms.
 - Supports spatial structure influence by computing histograms by block or as a spatial pyramid.
+
+**Texture-based descriptors:**
+- **DCT (Discrete Cosine Transform)**: Block-based frequency analysis with configurable grid size, block size, and zigzag coefficient extraction.
+- **LBP (Local Binary Patterns)**: Multiscale texture analysis with configurable radius and number of sampling points per scale.
+- **Wavelet (DWT)**: Multi-level wavelet decomposition with statistical feature extraction (mean, variance, std) from all subbands.
+
+**General features:**
 - Automatically loads all .jpg or .jpeg images from the input folder.
 - Stores computed descriptors and metadata in a single .pkl file for later use in retrieval and evaluation.
 
