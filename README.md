@@ -19,17 +19,32 @@ To learn more about the experimentation process and the choice of optimal parame
 
 1. **Indexing the database.** Compute and store color histograms for all database images (performed offline).
 
-2. **Background removal.** Use color to remove the background of the query images.
+2. **Noise detection and removal.** Detects noisy images by measuring  intensity fluctuations, and if detected, removes the noise.
 
-3. **Feature extraction for query images.** Compute the same descriptor type used for the database for each query image only on the foreground pixels.
+3. **Background removal.** Use color to remove the background of the query images.
 
-4. **Similarity computation.** Compare query descriptors with the database using distance metrics.
+4. **Feature extraction for query images.** Compute the same descriptor type used for the database for each query image only on the foreground pixels.
 
-5. **Ranking and retrieval.** Sort database images according to similarity and return the top-k most visually similar paintings.
+5. **Similarity computation.** Compare query descriptors with the database using distance metrics.
+
+6. **Ranking and retrieval.** Sort database images according to similarity and return the top-k most visually similar paintings.
 
 ## Features
 
-- **Background Removal:** Automatically segments the painting from its background using robust color statistics and morphological filtering.  
+- **Noise detection and removal:** Detects noisy images by measuring local intensity fluctuations. And if detected, replaces each pixel value using its neighborhood context to remove it.
+
+  **Noise detection methods:**
+  - Laplacian filter
+  - Gradient difference
+  - Wavelet transform
+  - FFT-based method
+
+  **Noise removal methods:**
+  - Gaussian filter
+  - Median filter
+  - Wavelet decomposition
+
+- **Background Removal:** Automatically segments the painting from its background using robust color statistics and morphological filtering. 
 
 - **Multiple Image Descriptors:** Extract diverse visual representations capturing color, texture, and spatial information.  
   
@@ -439,6 +454,14 @@ We built the final pipeline combining the background removal and used the best c
 
 We observed that background removal is generally successful, but leaves minor noise at painting borders. This segmentation noise leads to incorrect matches, degrading the metrics compared to the non-segmented version with the 1st dataset. Nonetheless, we reached a mAP@1 of 0.6667 and a mAP@5 of 0.7333.
  
+
+### Week 3
+
+#### Noise detection and removal
+
+In this task, we addressed the problem of detecting and removing noise from a dataset containing both clean and noisy images with unknown characteristics. Since most noise is concentrated in the luminance component, all experiments were carried out in the YCbCr color space, focusing on the Y channel. We evaluated several noise detection approaches: Laplacian filter, gradient difference, wavelet transform, and FFT-based method to identify which images were affected. The Laplacian filter achieved the most stable and accurate results across different noise types.
+
+After detection, we applied three denoising techniques: Gaussian, median, and wavelet-based filters. Their hyperparameters were optimized through grid search using PSNR and SSIM as evaluation metrics. Results showed that applying denoising selectively on noisy images improved overall quality, with the median filter providing the best trade-off between noise reduction and edge preservation.
 
 
 ## Team members:
