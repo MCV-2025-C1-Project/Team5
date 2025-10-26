@@ -463,6 +463,18 @@ In this task, we addressed the problem of detecting and removing noise from a da
 
 After detection, we applied three denoising techniques: Gaussian, median, and wavelet-based filters. Their hyperparameters were optimized through grid search using PSNR and SSIM as evaluation metrics. Results showed that applying denoising selectively on noisy images improved overall quality, with the median filter providing the best trade-off between noise reduction and edge preservation.
 
+To run the segmentation for multiple paintings per image run:
+
+```bash
+python -m src.models.seg --image_folder /path/to/images --output_folder /path/to.outputs --multi_painting
+```
+
+To run the retrieval after segmentation, run:
+
+```bash
+python -m src.models.seg_and_retrieve --query_dir /path/to/input --museum_dir /path/to/BBDD/ --output /path/to/pickle/directory --descriptor descriptor_name --distance distance_name --k 10 --values_per_bin 1 --row_thickness 50 --min_gap_size 50 --sigma 1.0          --radius 2
+```
+
 #### Texture descriptors
 
 We implemented and evaluated three texture descriptors — DCT, LBP, and DWT — to capture structural and textural information from paintings. Each method was tested under different conditions, varying color space (Grayscale, LAB, HSV), spatial detail (4×4 vs 8×8 grids), and descriptor complexity (number of coefficients, scales, or decomposition levels). All experiments were conducted on both the original and denoised datasets to assess robustness to noise. 
