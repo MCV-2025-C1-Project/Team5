@@ -2,9 +2,9 @@ import numpy as np
 import os
 import cv2
 from scipy.ndimage import (
-    binary_opening, binary_closing, binary_fill_holes
+    binary_opening, binary_closing, binary_fill_holes, gaussian_filter
 )
-from typing import Dict, List
+from typing import Dict, List, Tuple
 import matplotlib.pyplot as plt
 import warnings
 import argparse
@@ -27,6 +27,31 @@ from src.visualization.viz import (
 from src.descriptors.grayscale import convert_img_to_gray_scale
 from src.descriptors.lab import convert_img_to_lab
 from src.descriptors.hsv import convert_img_to_hsv
+
+
+def apply_gaussian_filter(image: np.ndarray, sigma: float = 1.0, radius: int = 2) -> np.ndarray:
+    """
+    Apply Gaussian filter to denoise image.
+
+    Args:
+        image (np.ndarray): Input image (H, W, C).
+        sigma (float): Standard deviation for Gaussian kernel.
+        radius (int): Radius of Gaussian kernel (truncate parameter).
+
+    Returns:
+        np.ndarray: Filtered image.
+    """
+    # Apply Gaussian filter to each channel
+    filtered = np.zeros_like(image, dtype=np.float32)
+    for c in range(image.shape[2]):
+        filtered[:, :, c] = gaussian_filter(
+            image[:, :, c].astype(np.float32),
+            sigma=sigma,
+            truncate=radius
+        )
+
+    return filtered.astype(image.dtype)
+
 
 def _estimate_bg_from_borders(image_lab: np.ndarray, border: int = 20) -> Dict[str, np.ndarray]:
     """
@@ -172,6 +197,34 @@ def _project_mask_to_signal(mask: np.ndarray, axis: int = 0) -> np.ndarray:
     return signal
 
 
+def _project_mask_to_signal_thick(mask: np.ndarray, row_thickness: int = 50) -> np.ndarray:
+    """
+    Project mask to 1D signal using thick row detection (improved method).
+
+    For each column, if ANY pixel in that column has foreground, signal=1, else signal=0.
+    This provides more robust gap detection than single-pixel rows.
+
+    Args:
+        mask (np.ndarray): Binary mask (H, W).
+        row_thickness (int): Row thickness parameter (informational, actual check is per-column).
+
+    Returns:
+        np.ndarray: 1D signal array of length W.
+    """
+    H, W = mask.shape
+    signal = []
+
+    # Process column by column
+    for col in range(W):
+        # Check if any pixel in this column (across all rows) has foreground
+        if np.any(mask[:, col] > 0):
+            signal.append(1)
+        else:
+            signal.append(0)
+
+    return np.array(signal)
+
+
 def _detect_gap_pattern(signal: np.ndarray, min_gap_size: int = 10) -> tuple:
     """
     Detect if there are multiple paintings by analyzing the 1D signal pattern.
@@ -219,6 +272,50 @@ def _detect_gap_pattern(signal: np.ndarray, min_gap_size: int = 10) -> tuple:
     return (2, gap_start, gap_end)
 
 
+def _detect_vertical_gap(signal: np.ndarray, min_gap_size: int = 50) -> Tuple[int, int, int]:
+    """
+    Detect vertical gap (background region) in signal for vertical-only splitting.
+
+    This is an improved version focused on detecting side-by-side paintings only.
+
+    Args:
+        signal (np.ndarray): 1D binary signal.
+        min_gap_size (int): Minimum gap size to consider as split (pixels).
+
+    Returns:
+        Tuple[int, int, int]: (num_regions, gap_start, gap_end)
+            - num_regions: 1 for single painting, 2 for two paintings
+            - gap_start, gap_end: Gap boundaries (-1, -1 if single painting)
+    """
+    # Find transitions from 0 to 1 (region starts) and 1 to 0 (region ends)
+    diff = np.diff(np.concatenate([[0], signal, [0]]))
+    starts = np.where(diff == 1)[0]
+    ends = np.where(diff == -1)[0]
+
+    num_regions = len(starts)
+
+    if num_regions <= 1:
+        # Single painting or no painting
+        return (1, -1, -1)
+
+    # Find gaps between regions
+    gaps = []
+    for i in range(num_regions - 1):
+        gap_start = ends[i]
+        gap_end = starts[i + 1]
+        gap_size = gap_end - gap_start
+        if gap_size >= min_gap_size:
+            gaps.append((gap_start, gap_end, gap_size))
+
+    if len(gaps) == 0:
+        # No significant gap found
+        return (1, -1, -1)
+
+    # Return largest gap (most likely separation between paintings)
+    largest_gap = max(gaps, key=lambda x: x[2])
+    return (2, largest_gap[0], largest_gap[1])
+
+
 def _find_split_position(gap_start: int, gap_end: int) -> int:
     """
     Find the split position at the middle of the gap.
@@ -231,6 +328,38 @@ def _find_split_position(gap_start: int, gap_end: int) -> int:
         int: Split position (middle of the gap).
     """
     return (gap_start + gap_end) // 2
+
+
+def crop_to_mask_bounds(image: np.ndarray, mask: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Crop image and mask to the bounding box of the foreground.
+
+    This function finds the tight bounding box around the foreground pixels
+    and crops both the image and mask to this region.
+
+    Args:
+        image (np.ndarray): Image to crop (H, W, C).
+        mask (np.ndarray): Binary mask (H, W).
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray]: Cropped (image, mask) tuple.
+    """
+    # Find bounding box of foreground
+    rows = np.any(mask, axis=1)
+    cols = np.any(mask, axis=0)
+
+    if not np.any(rows) or not np.any(cols):
+        # No foreground, return original
+        return image, mask
+
+    rmin, rmax = np.where(rows)[0][[0, -1]]
+    cmin, cmax = np.where(cols)[0][[0, -1]]
+
+    # Crop to bounding box
+    cropped_image = image[rmin:rmax+1, cmin:cmax+1]
+    cropped_mask = mask[rmin:rmax+1, cmin:cmax+1]
+
+    return cropped_image, cropped_mask
 
 
 def visualize_signal_analysis(image: np.ndarray,
@@ -384,6 +513,47 @@ def visualize_split_comparison(image: np.ndarray,
         plt.close(fig)
 
     return fig
+
+
+def detect_and_split_paintings(image: np.ndarray,
+                                mask: np.ndarray,
+                                row_thickness: int = 50,
+                                min_gap_size: int = 50) -> List[Tuple[np.ndarray, np.ndarray]]:
+    """
+    Detect if image has multiple paintings and split vertically if needed (improved method).
+
+    This is a simplified version that only performs vertical splitting (side-by-side paintings)
+    using the improved thick row signal detection method.
+
+    Args:
+        image (np.ndarray): Original image.
+        mask (np.ndarray): Segmentation mask.
+        row_thickness (int): Row thickness for signal detection (for robust gap detection).
+        min_gap_size (int): Minimum gap size to consider as split (pixels).
+
+    Returns:
+        List[Tuple[np.ndarray, np.ndarray]]: List of (image_crop, mask_crop) tuples.
+    """
+    # Project mask to signal using thick row method
+    signal = _project_mask_to_signal_thick(mask, row_thickness)
+
+    # Detect vertical gap
+    num_paintings, gap_start, gap_end = _detect_vertical_gap(signal, min_gap_size)
+
+    if num_paintings == 1:
+        # Single painting - return whole image and mask
+        return [(image, mask)]
+
+    # Two paintings - split at gap center
+    split_col = (gap_start + gap_end) // 2
+
+    left_image = image[:, :split_col]
+    right_image = image[:, split_col:]
+
+    left_mask = mask[:, :split_col]
+    right_mask = mask[:, split_col:]
+
+    return [(left_image, left_mask), (right_image, right_mask)]
 
 
 def segment_multiple_paintings(image: np.ndarray,
@@ -610,7 +780,10 @@ def segment_background(image: np.ndarray,
                                 wL: float = 0.6, wA: float = 1.0, wB: float = 1.0,
                                 sat_min: float = 30.0,
                                 hue_percentile: float = 92.0,
-                                hue_margin_deg: float = 6.0) -> np.ndarray:
+                                hue_margin_deg: float = 6.0,
+                                apply_gaussian: bool = False,
+                                sigma: float = 1.0,
+                                radius: int = 2) -> np.ndarray:
     """
     Segment foreground from background using LAB and HSV color-based methods.
 
@@ -628,10 +801,17 @@ def segment_background(image: np.ndarray,
         sat_min (float): Minimum saturation threshold for hue-based segmentation.
         hue_percentile (float): Percentile for hue distance threshold.
         hue_margin_deg (float): Margin in degrees added to hue distance threshold.
+        apply_gaussian (bool): Whether to apply Gaussian filtering for denoising.
+        sigma (float): Standard deviation for Gaussian kernel.
+        radius (int): Radius of Gaussian kernel (truncate parameter).
 
     Returns:
         np.ndarray: Binary mask where foreground is 1 and background is 0.
     """
+    # Apply Gaussian filter for denoising if requested
+    if apply_gaussian:
+        image = apply_gaussian_filter(image, sigma=sigma, radius=radius)
+
     lab = convert_img_to_lab(image).astype(np.float32)
     hsv = convert_img_to_hsv(image).astype(np.float32)
 
