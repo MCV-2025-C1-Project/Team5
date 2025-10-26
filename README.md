@@ -463,6 +463,17 @@ In this task, we addressed the problem of detecting and removing noise from a da
 
 After detection, we applied three denoising techniques: Gaussian, median, and wavelet-based filters. Their hyperparameters were optimized through grid search using PSNR and SSIM as evaluation metrics. Results showed that applying denoising selectively on noisy images improved overall quality, with the median filter providing the best trade-off between noise reduction and edge preservation.
 
+#### Texture descriptors
+
+We implemented and evaluated three texture descriptors — DCT, LBP, and DWT — to capture structural and textural information from paintings. Each method was tested under different conditions, varying color space (Grayscale, LAB, HSV), spatial detail (4×4 vs 8×8 grids), and descriptor complexity (number of coefficients, scales, or decomposition levels). All experiments were conducted on both the original and denoised datasets to assess robustness to noise. 
+
+The DCT descriptor captured low-frequency patterns within image blocks through a zigzag scan of DCT coefficients. It achieved the best results with DCT_LAB_4×4_16Coeffs + Canberra distance, reaching mAP@1 = 1.00 on both noisy and denoised images, showing excellent discriminative power and stability, especially in LAB and Grayscale spaces. 
+
+The LBP descriptor encoded local micro-patterns using binary comparisons of neighboring pixels, with performance improving for higher complexity (multi-scale and finer grids). The best configuration, LBP_LAB_MS2_8×8, reached mAP@1 = 0.60, but slightly decreased to 0.57 after denoising, suggesting that noise removal also smoothed the fine texture details crucial to LBP. 
+
+Finally, the DWT descriptor combined spatial and frequency analysis through multi-scale wavelet decomposition. The block-based version preserved spatial information and clearly outperformed the global one. Its best configuration, Block_Haar_Grayscale_8×8_LVL1 + Euclidean distance, achieved mAP@1 = 1.00 even after denoising, confirming strong robustness to both noise and color variations. 
+
+Overall, DCT and DWT reached perfect accuracy, while DWT proved the most stable under all conditions, and LBP, although effective, remained more sensitive to smoothing and noise.
 
 ## Team members:
 
