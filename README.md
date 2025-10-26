@@ -469,11 +469,6 @@ To run the segmentation for multiple paintings per image run:
 python -m src.models.seg --image_folder /path/to/images --output_folder /path/to.outputs --multi_painting
 ```
 
-To run the retrieval after segmentation, run:
-
-```bash
-python -m src.models.seg_and_retrieve --query_dir /path/to/input --museum_dir /path/to/BBDD/ --output /path/to/pickle/directory --descriptor descriptor_name --distance distance_name --k 10 --values_per_bin 1 --row_thickness 50 --min_gap_size 50 --sigma 1.0          --radius 2
-```
 
 #### Texture descriptors
 
