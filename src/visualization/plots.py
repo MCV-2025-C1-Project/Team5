@@ -8,19 +8,30 @@ import numpy as np
 import cv2
 
 
-def display_image(img_bgr: np.ndarray, ax=None) -> None:
+def display_image(img_bgr: np.ndarray, ax=None, title: str = None, **kwargs:None) -> None:
     """
     Display an image using Matplotlib.
 
     Args:
-        img (np.ndarray): Image array to display.
+        img_bgr (np.ndarray): Image array in BGR format.
+        ax (matplotlib.axes.Axes, optional): Axis to draw the image on. If None, creates a new figure.
+        title (str, optional): Title to display above the image.
+        **kwargs: Additional arguments forwarded to plt.imshow() or ax.imshow().
     """
     img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
-    if ax:
-        ax.imshow(img_rgb, cmap="gray" if img_rgb.ndim == 2 else None)
+
+    if ax is not None:
+        ax.imshow(img_rgb, cmap="gray" if img_rgb.ndim == 2 else None, **kwargs)
+        if title:
+            ax.set_title(title)
+        ax.axis("off")
         return ax
     else:
-        plt.imshow(img_rgb, cmap="gray" if img_rgb.ndim == 2 else None)
+        plt.figure(figsize=(12, 6))
+        plt.imshow(img_rgb, cmap="gray" if img_rgb.ndim == 2 else None, **kwargs)
+        if title:
+            plt.title(title)
+        plt.axis("off")
         plt.show()
 
 
@@ -251,3 +262,74 @@ def draw_keypoints(
     flags = cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS if draw_rich else cv2.DRAW_MATCHES_FLAGS_DEFAULT
     out = cv2.drawKeypoints(img_bgr, keypoints, None, color=color, flags=flags)
     display_image(out, **kwargs)
+
+def draw_matches(
+    img1: np.ndarray,
+    kps1: List[cv2.KeyPoint],
+    img2: np.ndarray,
+    kps2: List[cv2.KeyPoint],
+    matches: List[cv2.DMatch],
+    title: str = "",
+    resize: bool = False,
+    resize_height: int = 600,
+    draw_rich: bool = False,
+    **kwargs: Any
+) -> np.ndarray:
+    """
+    Draw matches between two images with optional resizing (and keypoint scaling) for better visualization.
+
+    Args:
+        img1 (np.ndarray): Query image (BGR).
+        kps1 (List[cv2.KeyPoint]): Keypoints from the query image.
+        img2 (np.ndarray): Database image (BGR).
+        kps2 (List[cv2.KeyPoint]): Keypoints from the database image.
+        matches (List[cv2.DMatch]): Matches to draw.
+        title (str, optional): Title for the plot.
+        resize (bool, optional): Whether to resize both images to a common height for display. Defaults to False.
+        resize_height (int, optional): Target height when resizing. Defaults to 600.
+        draw_rich (bool, optional): If True, draws keypoints with size and orientation. Defaults to False.
+        **kwargs (Any): Extra arguments passed to display_image().
+
+    Returns:
+        np.ndarray: The final image with matches drawn.
+    """
+
+    def scale_keypoints(keypoints: List[cv2.KeyPoint], scale: float) -> List[cv2.KeyPoint]:
+        """Scale keypoint coordinates and sizes by a factor."""
+        scaled = []
+        for kp in keypoints:
+            scaled.append(cv2.KeyPoint(
+                x=kp.pt[0] * scale,
+                y=kp.pt[1] * scale,
+                size=kp.size * scale,
+                angle=kp.angle,
+                response=kp.response,
+                octave=kp.octave,
+                class_id=kp.class_id
+            ))
+        return scaled
+
+    def resize_to_height(img: np.ndarray, kps: List[cv2.KeyPoint], height: int):
+        """Resize image and scale keypoints proportionally."""
+        h, w = img.shape[:2]
+        scale = height / float(h)
+        img_resized = cv2.resize(img, (int(w * scale), height))
+        kps_scaled = scale_keypoints(kps, scale)
+        return img_resized, kps_scaled
+
+    # Resize if True
+    if resize:
+        img1, kps1 = resize_to_height(img1, kps1, resize_height)
+        img2, kps2 = resize_to_height(img2, kps2, resize_height)
+
+    # Draw matches
+    flags = cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS if draw_rich else cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS
+    img_matches = cv2.drawMatches(img1, kps1, img2, kps2, matches, None, flags=flags)
+
+    # Display
+    display_image(img_matches, title=title, **kwargs)
+    return img_matches
+
+
+
+
