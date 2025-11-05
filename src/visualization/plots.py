@@ -2,6 +2,7 @@
 Visualization utilities: display images and histograms.
 """
 
+from typing import List, Tuple, Any
 import matplotlib.pyplot as plt
 import numpy as np
 import cv2
@@ -225,3 +226,28 @@ def display_2d_histogram(hist: np.ndarray, bin_edges: np.ndarray) -> None:
     ax.set_zlabel("Frequency")
 
     plt.show()
+
+
+def draw_keypoints(
+        img_bgr: np.ndarray,
+        keypoints: List[cv2.KeyPoint],
+        color: Tuple[int, int, int] = (0, 255, 0),
+        draw_rich: bool = False,
+        **kwargs: Any
+) -> None:
+    """Draws cv2.KeyPoint objects on an image and displays it.
+
+    Args:
+        img_bgr (np.ndarray): Input image in BGR format.
+        keypoints (List[cv2.KeyPoint]): List of keypoints detected (e.g., from Harris or LoG).
+        color (Tuple[int, int, int], optional): Color used to draw the keypoints (BGR). Defaults to green.
+        draw_rich (bool, optional): If True, draws the keypoints with size and orientation
+            (like in SIFT/ORB visualization). Defaults to False.
+        **kwargs (Any): Additional keyword arguments forwarded to `display_image()`.
+
+    Returns:
+        None
+    """
+    flags = cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS if draw_rich else cv2.DRAW_MATCHES_FLAGS_DEFAULT
+    out = cv2.drawKeypoints(img_bgr, keypoints, None, color=color, flags=flags)
+    display_image(out, **kwargs)
