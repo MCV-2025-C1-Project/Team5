@@ -2,7 +2,6 @@ import numpy as np
 
 from src.tools import utils
 
-
 def compute_euclidean_distance(hist1: np.ndarray, hist2: np.ndarray) -> np.float64:
     """Compute the Euclidean (L2) distance between two histograms.
 
@@ -16,17 +15,27 @@ def compute_euclidean_distance(hist1: np.ndarray, hist2: np.ndarray) -> np.float
     utils.validate_same_shape(hist1, hist2)
     return np.sqrt(np.sum(np.square(hist1 - hist2)))
 
-def compute_euclidean_distance_matrix(A: np.ndarray, B: np.ndarray) -> np.ndarray:
-    """Compute pairwise Euclidean distances between two sets of descriptors.
+def compute_euclidean_distance_matrix(A, B, batch_size=None):
+    """
+    Compute pairwise Euclidean (L2) distances between two sets of vectors.
 
     Args:
-        A (np.ndarray): First set of descriptors of shape (N, D)
-        B (np.ndarray): Second set of descriptors of shape (M, D)
+        A (np.ndarray): First set of vectors, shape (N, D).
+        B (np.ndarray): Second set of vectors, shape (M, D).
+        batch_size (int | None): If given, compute in batches to save memory.
 
     Returns:
-        np.ndarray: Distance matrix of shape (N, M),
-                    where element (i, j) is the Euclidean distance
-                    between A[i] and B[j].
+        np.ndarray: Pairwise Euclidean distances, shape (N, M).
     """
-    dist_matrix = np.sqrt(((A[:, None, :] - B[None, :, :]) ** 2).sum(axis=2))
-    return dist_matrix
+    utils.validate_same_dim(A,B)
+    if batch_size is None:
+        # fully vectorized
+        return np.sqrt(((A[:, None, :] - B[None, :, :]) ** 2).sum(axis=2))
+    else:
+        N, M = A.shape[0], B.shape[0]
+        D = np.zeros((N, M), dtype=np.float32)
+        for i in range(0, N, batch_size):
+            Ai = A[i:i + batch_size]
+            D[i:i + len(Ai)] = np.sqrt(((Ai[:, None, :] - B[None, :, :]) ** 2).sum(axis=2))
+        return D
+
