@@ -5,6 +5,23 @@ def validate_same_shape(a: np.ndarray, b: np.ndarray) -> None:
     """Raise if inputs do not share the same shape."""
     if a.shape != b.shape:
         raise ValueError(f"Shape mismatch: {a.shape=} vs {b.shape=}")
+    
+def validate_same_dim(A: np.ndarray, B: np.ndarray) -> None:
+    """
+    Validate that two input arrays have the same descriptor dimension.
+
+    Args:
+        A (np.ndarray): First input array, shape (N, D).
+        B (np.ndarray): Second input array, shape (M, D).
+
+    Raises:
+        ValueError: If arrays do not have the same descriptor dimension (D).
+    """
+    if A.ndim != 2 or B.ndim != 2:
+        raise ValueError(f"Both inputs must be 2D arrays, got A.ndim={A.ndim}, B.ndim={B.ndim}")
+    
+    if A.shape[1] != B.shape[1]:
+        raise ValueError(f"Descriptor dimensions must match: got {A.shape[1]} and {B.shape[1]}")
 
 
 def normalize_mask(mask: np.ndarray) -> np.ndarray:
