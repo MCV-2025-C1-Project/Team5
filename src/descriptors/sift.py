@@ -10,7 +10,7 @@ SIFT_DESCRIPTOR_DIM = 128
 def compute_sift_descriptor_from_array(
     img_bgr: np.ndarray,
     keypoint_detector: Optional[Callable] = None,
-    nfeatures: int = 500,
+    nfeatures: int = 5000,
     nOctaveLayers: int = 3,
     contrastThreshold: float = 0.04,
     edgeThreshold: float = 10.0,
@@ -51,7 +51,10 @@ def compute_sift_descriptor_from_array(
         keypoints = keypoint_detector(img_bgr, **keypoint_params)
     else:
         keypoints = sift.detect(img_gray, None)
-    
+
+    if len(keypoints) > nfeatures:
+        keypoints = sorted(keypoints, key=lambda kp: kp.response, reverse=True)[:nfeatures]
+
     if not keypoints:
         if aggregation == 'mean':
             return [], np.zeros(SIFT_DESCRIPTOR_DIM, dtype=np.float32)
