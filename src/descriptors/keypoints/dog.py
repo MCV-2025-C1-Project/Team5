@@ -10,7 +10,8 @@ def detect_dog_keypoints_from_array(
         num_scales: int = 5,
         sigma_base: float = 1.6,
         contrast_threshold: float = 0.03,
-        edge_threshold: float = 10.0
+        edge_threshold: float = 10.0,
+        **kwargs
 ) -> np.ndarray:
     """Detect keypoints using Difference of Gaussians (DoG) from an image array.
 
@@ -49,7 +50,8 @@ def detect_dog_keypoints(
         num_scales: int = 5,
         sigma_base: float = 1.6,
         contrast_threshold: float = 0.03,
-        edge_threshold: float = 10.0
+        edge_threshold: float = 10.0,
+        **kwargs
 ) -> np.ndarray:
     """Detect DoG keypoints from an image file path.
 
