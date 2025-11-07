@@ -2,9 +2,18 @@ from pathlib import Path
 from typing import List
 import pickle
 from tqdm import tqdm
-
+from src.distances import (bhattacharyya,
+                           canberra,
+                           chi_2,
+                           correlation,
+                           cosine,
+                           euclidean,
+                           hellinger,
+                           histogram_intersection,
+                           jensen_shannon,
+                           l1)
 from src.metrics.precision import mapk
-from src.models.main import ComputeImageHistogram
+from src.models.main import ComputeImageFeatures
 from src.tools.startup import logger
 
 
@@ -115,7 +124,11 @@ ALL_DESCRIPTORS = [
     'block_bior44_hsv_4x4_lvl2',
     'block_bior44_hsv_8x8_lvl2',
     'block_bior44_hsv_4x4_lvl3',
-    'block_bior44_hsv_8x8_lvl3'
+    'block_bior44_hsv_8x8_lvl3',
+    'sift_dog_default',
+    'sift_dog_soft',
+    'sift_dog_strict',
+    'sift_harris'
 ]
 
 ALL_DISTANCE_METRICS = [
@@ -233,7 +246,11 @@ DESCRIPTOR_NAMES = {
     'block_bior44_hsv_4x4_lvl2': 'Block_Bior44_HSV_4x4_LVL2',
     'block_bior44_hsv_8x8_lvl2': 'Block_Bior44_HSV_8x8_LVL2',
     'block_bior44_hsv_4x4_lvl3': 'Block_Bior44_HSV_4x4_LVL3',
-    'block_bior44_hsv_8x8_lvl3': 'Block_Bior44_HSV_8x8_LVL3'
+    'block_bior44_hsv_8x8_lvl3': 'Block_Bior44_HSV_8x8_LVL3',
+    'sift_dog_default': 'SIFT_DOG_DEFAULT',
+    'sift_dog_soft': 'SIFT_DOG_SOFT',
+    'sift_dog_strict': 'SIFT_DOG_STRICT',
+    'sift_harris': 'SIFT_HARRIS'
 }
 
 DISTANCE_NAMES = {
@@ -252,10 +269,11 @@ DISTANCE_NAMES = {
 
 def evaluate_all_descriptors_and_distances(
     qsd1_dir: str, museum_dir: str,
-        ground_truth_pickle: str, values_per_bin: int = 1,
-        k_values: List[int] = [1, 5],
-        descriptors: List[str] = None,
-        distance_metrics: List[str] = None):
+    ground_truth_pickle: str, values_per_bin: int = 1,
+    k_values: List[int] = [1, 5],
+    descriptors: List[str] = None,
+    distance_metrics: List[str] = None,
+    mode: str = "global"):
     """
     Evaluate all combinations of descriptors and distance metrics.
 
@@ -324,8 +342,8 @@ def evaluate_all_descriptors_and_distances(
 
             # Initialize system with cache (reuses database if descriptor unchanged)
             if system is None:
-                system = ComputeImageHistogram(
-                    museum_dir, dist_metric, descriptor, values_per_bin)
+                system = ComputeImageFeatures(
+                    museum_dir, dist_metric, descriptor, mode, values_per_bin)
             else:
                 # Reuse existing system, only update distance metric
                 system.distance_metric = dist_metric
@@ -339,9 +357,14 @@ def evaluate_all_descriptors_and_distances(
                     tqdm(query_images, desc="Queries", leave=False)
             ):
                 if query_idx < len(ground_truth):
-                    retrieved = system.retrieve(
-                        str(query_path), k=max(k_values))
-                    predicted_ids = [img_id for img_id, _ in retrieved]
+                    # retrieved = system.retrieve(str(query_path), k=max(k_values))
+                    retrieval_result = system.retrieve(str(query_path), k=max(k_values))
+                    if mode == "local":
+                        retrieved, _ = retrieval_result
+                        predicted_ids = [img_id for img_id, _, _ in retrieved]
+                    else:
+                        retrieved = retrieval_result
+                        predicted_ids = [img_id for img_id, _ in retrieved]
 
                     # Get ground truth for this query
                     gt = ground_truth[query_idx]

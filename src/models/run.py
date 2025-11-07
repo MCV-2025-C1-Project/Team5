@@ -13,6 +13,15 @@ def main():
 
     # Required arguments
     parser.add_argument(
+        '--mode',
+        type=str,
+        required=True,
+        default='global',
+        choices=['global', 'local'],
+        help='Retrieval mode: "global" for global histogram-based retrieval or "local" for keypoint-based retrieval.'
+    )
+
+    parser.add_argument(
         '--query_dir',
         type=str,
         required=True,
@@ -95,7 +104,8 @@ def main():
                  'block_bior44_grayscale_4x4_lvl1', 'block_bior44_grayscale_8x8_lvl1', 'block_bior44_grayscale_4x4_lvl2', 
                  'block_bior44_grayscale_8x8_lvl2', 'block_bior44_grayscale_4x4_lvl3', 'block_bior44_grayscale_8x8_lvl3',
                  'block_bior44_hsv_4x4_lvl1', 'block_bior44_hsv_8x8_lvl1', 'block_bior44_hsv_4x4_lvl2', 
-                 'block_bior44_hsv_8x8_lvl2', 'block_bior44_hsv_4x4_lvl3', 'block_bior44_hsv_8x8_lvl3'
+                 'block_bior44_hsv_8x8_lvl2', 'block_bior44_hsv_4x4_lvl3', 'block_bior44_hsv_8x8_lvl3',
+                 'sift_dog_default', 'sift_dog_soft', 'sift_dog_strict', 'sif_harris'
                  ],
         help='Specific descriptors to evaluate (default: all). Multiple allowed.'
     )
@@ -132,18 +142,21 @@ def main():
     logger.info("=" * 80)
     logger.info("IMAGE RETRIEVAL SYSTEM - COMPREHENSIVE ANALYSIS")
     logger.info("=" * 80)
+    logger.info(f"Mode:                {args.mode.upper()}")
     logger.info(f"Query Directory:     {args.query_dir}")
     logger.info(f"Museum Directory:    {args.museum_dir}")
     logger.info(f"Ground Truth:        {args.ground_truth}")
-    logger.info(f"Values per bin:      {args.values_per_bin}")
     logger.info(f"Output Directory:    {args.output_dir}")
     logger.info(f"Top-k:               {args.k}")
+
+    if args.values_per_bin:
+        logger.info(f"Values per bin:      {args.values_per_bin}")
 
     if args.descriptors:
         logger.info(f"Descriptors:         {', '.join(args.descriptors)}")
     else:
         logger.info(
-            f"Descriptors:         All (rgb, hsv, ycbcr, lab, grayscale)")
+            f"Descriptors:         All")
 
     if args.distances:
         logger.info(f"Distance Metrics:    {len(args.distances)} selected")
@@ -157,22 +170,44 @@ def main():
     logger.info(f"Total Combinations:  {total_combinations}")
     logger.info("=" * 80)
 
-    # Run comprehensive analysis
-    all_results, best_desc, best_dist, best_score, result_list = generate_comprehensive_analysis(
-        args.query_dir,
-        args.museum_dir,
-        args.ground_truth,
-        values_per_bin=args.values_per_bin,
-        output_dir=args.output_dir,
-        k=args.k,
-        descriptors=args.descriptors,
-        distance_metrics=args.distances
-    )
+    if args.mode == 'global':
+        logger.info(">>> Running GLOBAL (histogram-based) retrieval mode")
 
+        # Run comprehensive analysis for GLOBAL
+        all_results, best_desc, best_dist, best_score, result_list = generate_comprehensive_analysis(
+            qsd_dir=args.query_dir,
+            museum_dir=args.museum_dir,
+            ground_truth_pickle=args.ground_truth,
+            values_per_bin=args.values_per_bin,
+            output_dir=args.output_dir,
+            k=args.k,
+            descriptors=args.descriptors,
+            distance_metrics=args.distances,
+            mode='global'
+        )
+
+    elif args.mode == 'local':
+        logger.info(">>> Running LOCAL (keypoint-based) retrieval mode")
+
+        # Run comprehensive analysis for LOCAL
+        all_results, best_desc, best_dist, best_score, _ = generate_comprehensive_analysis(
+            qsd_dir=args.query_dir,
+            museum_dir=args.museum_dir,
+            ground_truth_pickle=args.ground_truth,
+            output_dir=args.output_dir,
+            k=args.k,
+            descriptors=args.descriptors,
+            distance_metrics=args.distances,
+            mode='local'
+        )
+
+    logger.info("=" * 80)
+    logger.info(">>> FINAL RESULTS <<<")
     logger.info(f"Best Descriptor: {best_desc}")
     logger.info(f"Best Distance:   {best_dist}")
     logger.info(f"Best mAP@5:      {best_score:.4f}")
     logger.info(f"Results saved to: {args.output_dir}")
+    logger.info("=" * 80)
 
 
 if __name__ == "__main__":

@@ -10,7 +10,9 @@ from sklearn.metrics import confusion_matrix
 import seaborn as sns
 
 from src.models.eval import evaluate_all_descriptors_and_distances
-from src.models.main import ComputeImageHistogram
+from src.models.main import ComputeImageFeatures
+from src.visualization.plots import draw_matches
+from src.data.extract import read_image
 from src.tools.startup import logger
 
 
@@ -117,7 +119,11 @@ DESC_NAME_TO_FUNC = {
     'Block_Bior44_HSV_4x4_LVL2': 'block_bior44_hsv_4x4_lvl2',
     'Block_Bior44_HSV_8x8_LVL2': 'block_bior44_hsv_8x8_lvl2',
     'Block_Bior44_HSV_4x4_LVL3': 'block_bior44_hsv_4x4_lvl3',
-    'Block_Bior44_HSV_8x8_LVL3': 'block_bior44_hsv_8x8_lvl3'
+    'Block_Bior44_HSV_8x8_LVL3': 'block_bior44_hsv_8x8_lvl3',
+    'SIFT_DOG_DEFAULT': 'sift_dog_default',
+    'SIFT_DOG_SOFT': 'sift_dog_soft',
+    'SIFT_DOG_STRICT': 'sift_dog_strict',
+    'SIFT_HARRIS': 'sift_harris'
 }
 
 DIST_NAME_TO_FUNC = {
@@ -145,14 +151,26 @@ def plot_top_k_results(query_image_path, retrieved_results,
     axes[0].set_title('Query Image', fontweight='bold')
     axes[0].axis('off')
 
+    if len(retrieved_results) == 1 and isinstance(retrieved_results[0], list):
+        retrieved_results = retrieved_results[0]
+
     # Plot top-k retrieved images
-    for i, (museum_id, distance) in enumerate(retrieved_results[:k]):
+    for i, item in enumerate(retrieved_results[:k]):
+
+        if len(item) == 2:
+            museum_id, distance = item
+            title = f'#{i+1}\nID: {museum_id}\nDist: {distance:.3f}'
+        elif len(item) == 3:
+            museum_id, num_tentative, num_inliers = item
+            title = f'#{i+1}\nID: {museum_id}\nInliers: {num_inliers}'
+        else:
+            raise ValueError(f"Unexpected tuple format: {item}")
         museum_path = Path(museum_dir) / f"bbdd_{museum_id:05d}.jpg"
         if museum_path.exists():
             retrieved_img = Image.open(museum_path)
             axes[i+1].imshow(retrieved_img)
             axes[i +
-                 1].set_title(f'#{i+1}\nID: {museum_id}\nDist: {distance:.3f}')
+                 1].set_title(title)
             axes[i+1].axis('off')
         else:
             axes[i+1].text(0.5, 0.5, f'Image {museum_id}\nnot found',
@@ -166,14 +184,15 @@ def plot_top_k_results(query_image_path, retrieved_results,
 
 
 def generate_comprehensive_analysis(
-    qsd1_dir: str,
+    qsd_dir: str,
     museum_dir: str,
     ground_truth_pickle: str,
     values_per_bin: int = 1,
     output_dir: str = "data/results",
     k: int = 5,
     descriptors: List[str] = None,
-    distance_metrics: List[str] = None
+    distance_metrics: List[str] = None,
+    mode: str = "global"
 ):
     """Generate complete analysis for all descriptors and distance metrics.
 
@@ -205,8 +224,9 @@ def generate_comprehensive_analysis(
 
     # Evaluate all descriptor-distance combinations
     all_results = evaluate_all_descriptors_and_distances(
-        qsd1_dir, museum_dir, ground_truth_pickle, values_per_bin,
-        descriptors=descriptors, distance_metrics=distance_metrics
+        qsd_dir, museum_dir, ground_truth_pickle, values_per_bin,
+        descriptors=descriptors, distance_metrics=distance_metrics,
+        mode=mode
     )
 
     # Find overall best combination
@@ -296,16 +316,16 @@ def generate_comprehensive_analysis(
 
     best_desc_func = DESC_NAME_TO_FUNC[best_desc_map5]
     best_dist_func = DIST_NAME_TO_FUNC[best_dist_map5]
-    best_system = ComputeImageHistogram(
-        museum_dir, best_dist_func, best_desc_func, values_per_bin)
+    best_system = ComputeImageFeatures(
+        museum_dir, best_dist_func, best_desc_func, mode, values_per_bin)
 
     # Load ground truth
     with open(ground_truth_pickle, 'rb') as f:
         ground_truth = pickle.load(f)
 
     # Generate sample retrieval visualizations
-    qsd1_path = Path(qsd1_dir)
-    query_images = sorted(qsd1_path.glob('*.jpg'))
+    qsd_path = Path(qsd_dir)
+    query_images = sorted(qsd_path.glob('*.jpg'))
 
     # Select sample queries
     sample_indices = np.random.choice(len(query_images),
@@ -314,19 +334,63 @@ def generate_comprehensive_analysis(
 
     for i, idx in enumerate(sample_indices):
         query_path = query_images[idx]
-        retrieved = best_system.retrieve(str(query_path), k=k)
+        if mode == 'local':
+            results, match_data = best_system.retrieve(str(query_path), k=k)
+            retrieved = results
+        else: 
+            retrieved = best_system.retrieve(str(query_path), k=k)
 
         save_path = f'{output_dir}/sample_{i+1}_query_{idx:05d}_top{k}.png'
         plot_top_k_results(str(query_path), retrieved,
                            museum_dir, k=k, save_path=save_path)
+        
+        if mode == 'local' and len(retrieved) > 0 and len(match_data) > 0:
+            top1 = retrieved[0]  # (museum_id, num_tentative, num_inliers)
+            top1_id = top1[0]
+            top1_matchinfo = match_data[0]  # {"good_matches": [...], "inlier_matches": [...]}
+
+            img_q = read_image(query_path)
+            museum_img_path = Path(museum_dir) / f"bbdd_{top1_id:05d}.jpg"
+            img_m = read_image(museum_img_path)
+
+            if best_system.query_keypoints is not None and len(best_system.query_keypoints) > 0:
+                kps_q = best_system.query_keypoints
+                kps_m = best_system.museum_features[top1_id]["keypoints"]
+
+                matches_to_draw = (
+                    top1_matchinfo["inlier_matches"]
+                    if len(top1_matchinfo["inlier_matches"]) > 0
+                    else top1_matchinfo["good_matches"]
+                )
+
+                logger.info(f"Drawing {len(matches_to_draw)} matches "f"(inliers={len(top1_matchinfo['inlier_matches'])}, good={len(top1_matchinfo['good_matches'])})")
+
+                match_save_path = f"{output_dir}/matches_query_{idx:05d}_to_{top1_id:05d}.jpg"
+                draw_matches(
+                    img1=img_q,
+                    kps1=kps_q,
+                    img2=img_m,
+                    kps2=kps_m,
+                    matches=matches_to_draw,
+                    title=f"Query {idx} ↔ BBDD {top1_id} | Inliers: {len(matches_to_draw)}",
+                    resize=False,
+                    save_path=match_save_path,
+                    show=False  
+                )
+
+        logger.info(f"Saved match visualization: {match_save_path}")
+
 
         # Print ground truth info
         if idx < len(ground_truth):
             gt = ground_truth[idx]
             gt_id = gt[0] if isinstance(gt, list) else gt
+            retrieved_ids = [r[0] for r in retrieved]
+            top1_correct = (retrieved_ids[0] == gt_id)
+
             logger.info(f"Query {idx}: GT={gt_id}, "
-                        f"Retrieved={[id for id, _ in retrieved]}, "
-                        f"Top-1 Correct={retrieved[0][0] == gt_id}")
+                    f"Retrieved={retrieved_ids}, "
+                    f"Top-1 Correct={top1_correct}")
 
     # Generate results for all queries and save as pickle
     logger.info("Generating results for all queries...")
@@ -336,8 +400,12 @@ def generate_comprehensive_analysis(
 
     for query_idx, query_path in enumerate(query_images):
         if query_idx < len(ground_truth):
-            retrieved = best_system.retrieve(str(query_path), k=k)
-            top_k_ids = [img_id for img_id, _ in retrieved]
+            if mode == 'local':
+                results, match_data = best_system.retrieve(str(query_path), k=k)
+                retrieved = results
+            else:
+                retrieved = best_system.retrieve(str(query_path), k=k)
+            top_k_ids = [r[0] for r in retrieved]
             result_list.append(top_k_ids)
             predictions.append(retrieved[0][0])  # Top-1 prediction
 

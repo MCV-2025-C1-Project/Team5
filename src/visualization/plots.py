@@ -2,7 +2,7 @@
 Visualization utilities: display images and histograms.
 """
 
-from typing import List, Tuple, Any
+from typing import List, Tuple, Any, Optional
 import matplotlib.pyplot as plt
 import numpy as np
 import cv2
@@ -273,6 +273,8 @@ def draw_matches(
     resize: bool = False,
     resize_height: int = 600,
     draw_rich: bool = False,
+    save_path: Optional[str] = None,
+    show: bool = True,
     **kwargs: Any
 ) -> np.ndarray:
     """
@@ -327,7 +329,10 @@ def draw_matches(
     img_matches = cv2.drawMatches(img1, kps1, img2, kps2, matches, None, flags=flags)
 
     # Display
-    display_image(img_matches, title=title, **kwargs)
+    if save_path:
+        cv2.imwrite(save_path, img_matches)
+    elif show:
+        display_image(img_matches, title=title, **kwargs)
     return img_matches
 
 
