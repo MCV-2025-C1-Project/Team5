@@ -23,7 +23,7 @@ def compute_daisy_descriptor_from_array(
     adjust_to_size: bool = True,
     normalization: str = "l2",
     orientations: int = 8,
-    visualize: bool = True,
+    visualize: bool = False,
     visualization_title: str = "DAISY descriptors",
     **keypoint_params
 ) -> Tuple[List[cv2.KeyPoint], np.ndarray]:
@@ -93,12 +93,14 @@ def compute_daisy_descriptor_from_array(
                 **kwargs
             )
             descs.append(descs_size)
-        descs = np.vstack(descs)
 
-        # sort descriptors in the initial keypoints order
-        pairs = list(zip(keypoints_sorted_by_size, descs))
-        pairs.sort(key=lambda x: x[0].response, reverse=True)
-        keypoints, descs = zip(*pairs)
+        if len(descs) > 0:
+            descs = np.vstack(descs)
+
+            # sort descriptors in the initial keypoints order
+            pairs = list(zip(keypoints_sorted_by_size, descs))
+            pairs.sort(key=lambda x: x[0].response, reverse=True)
+            keypoints, descs = zip(*pairs)
 
     else:
         descs, descs_img = daisy(
@@ -110,7 +112,7 @@ def compute_daisy_descriptor_from_array(
     if visualize:
         plots.display_daisy_descriptors(descs_img, visualization_title)
 
-    return keypoints, np.asarray(descs)
+    return keypoints, np.asarray(descs, dtype=np.float32)
 
 
 def daisy(
