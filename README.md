@@ -2,7 +2,7 @@
 
 This project implements a **query-by-example image retrieval system** designed to find paintings in the *Can Framis Museum*, *Figueres 120 years ago* and *Kode Bergen* image collection based on their **visual content**.  
 
-Developed by **Team 5** as part of the **C1 – Content Based Image Retrieval** course assignment at the *Master’s in Computer Vision (UPC-CVC)*, academic year 2025-2026.
+Developed by **Team 5** as part of the **C1 - Content Based Image Retrieval** course assignment at the *Master’s in Computer Vision (UPC-CVC)*, academic year 2025-2026.
 
 
 ## Overview
@@ -299,7 +299,7 @@ The retrieval system supports multiple distance and similarity metrics, allowing
 | `chi_2` | Measures dissimilarity between two histograms. |
 | `l1` | Manhattan (city-block) distance. |
 | `correlation` | Measures correlation-based similarity between histograms. |
-| `js_divergence` | Symmetric and smoothed version of Kullback–Leibler divergence. |
+| `js_divergence` | Symmetric and smoothed version of Kullback-Leibler divergence. |
 | `intersection` | Histogram intersection similarity. |
 | `hellinger` | Measures distance between normalized distributions. |
 | `euclidean` | Standard L2 distance. |
@@ -436,7 +436,7 @@ To evaluate how color representation and spatial structure influence retrieval p
 The best overall performance was achieved with the Spatial Pyramid Histogram (1D, HSV) using Level 4 and 32 bins, reaching
 mAP@1 = 0.833 and mAP@5 = 0.883.
 
-In contrast, 2D histograms (H–S) performed significantly worse — the best result (~0.50 mAP@5 with 16×16 bins) was even lower than our Week 1 baseline (mAP@1 = 0.667, mAP@5 = 0.707).
+In contrast, 2D histograms (H-S) performed significantly worse — the best result (~0.50 mAP@5 with 16×16 bins) was even lower than our Week 1 baseline (mAP@1 = 0.667, mAP@5 = 0.707).
 This suggests that removing the Value (V) channel discarded important brightness information that helps distinguish similar colors.
 
 For 3D histograms, results did not surpass the 1D spatial pyramid either, although the 3D pyramid (Level 3) reached a moderate mAP@5 = 0.72.

@@ -2,13 +2,15 @@
 Visualization utilities: display images and histograms.
 """
 
-from typing import List, Tuple, Any, Optional
+from typing import List, Tuple, Any, Optional, Sequence
+import math
 import matplotlib.pyplot as plt
 import numpy as np
 import cv2
+from skimage import draw
 
 
-def display_image(img_bgr: np.ndarray, ax=None, title: str = None, **kwargs:None) -> None:
+def display_image(img_bgr: np.ndarray, ax=None, title: str = None, **kwargs: None) -> None:
     """
     Display an image using Matplotlib.
 
@@ -21,14 +23,16 @@ def display_image(img_bgr: np.ndarray, ax=None, title: str = None, **kwargs:None
     img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
 
     if ax is not None:
-        ax.imshow(img_rgb, cmap="gray" if img_rgb.ndim == 2 else None, **kwargs)
+        ax.imshow(img_rgb, cmap="gray" if img_rgb.ndim ==
+                  2 else None, **kwargs)
         if title:
             ax.set_title(title)
         ax.axis("off")
         return ax
     else:
         plt.figure(figsize=(12, 6))
-        plt.imshow(img_rgb, cmap="gray" if img_rgb.ndim == 2 else None, **kwargs)
+        plt.imshow(img_rgb, cmap="gray" if img_rgb.ndim ==
+                   2 else None, **kwargs)
         if title:
             plt.title(title)
         plt.axis("off")
@@ -263,6 +267,7 @@ def draw_keypoints(
     out = cv2.drawKeypoints(img_bgr, keypoints, None, color=color, flags=flags)
     display_image(out, **kwargs)
 
+
 def draw_matches(
     img1: np.ndarray,
     kps1: List[cv2.KeyPoint],
@@ -326,7 +331,8 @@ def draw_matches(
 
     # Draw matches
     flags = cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS if draw_rich else cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS
-    img_matches = cv2.drawMatches(img1, kps1, img2, kps2, matches, None, flags=flags)
+    img_matches = cv2.drawMatches(
+        img1, kps1, img2, kps2, matches, None, flags=flags)
 
     # Display
     if save_path:
@@ -336,5 +342,129 @@ def draw_matches(
     return img_matches
 
 
+def draw_daisy_descriptors(
+    descs_img: np.ndarray,
+    descs: np.ndarray,
+    sigmas: Sequence[float],
+    orientation_angles: Sequence[float],
+    ring_radii: Sequence[float],
+    rings: int,
+    theta: Sequence[float],
+    orientations: int,
+    histograms: int,
+    xs: Sequence[int],
+    ys: Sequence[int],
+) -> np.ndarray:
+    """Overlay DAISY glyphs on an image for a set of keypoint descriptors.
+
+    For each keypoint (x, y), this draws:
+      * A center circle with radius `sigmas[0]` and its orientation spokes.
+      * For each ring `r` and angular sample `t`, a circle of radius
+        `sigmas[r+1]` centered at the ring location plus orientation spokes.
+    Each spoke length is proportional to the corresponding descriptor bin value.
+
+    Args:
+        descs_img: RGB image (H, W, 3), float in [0, 1] or uint8, to draw on.
+        descs: Descriptor matrix of shape (N, D), one row per keypoint.
+        sigmas: Spatial smoothing sigmas. Length must be `rings + 1`
+            (center + each ring).
+        orientation_angles: Angles (radians) for the orientation bins (len = orientations).
+        ring_radii: Radii (pixels) for each ring (len = rings).
+        rings: Number of rings (excluding the center).
+        theta: Angular locations (radians) of histograms around each ring (len = histograms).
+        orientations: Number of orientation bins per histogram.
+        histograms: Number of histograms sampled per ring.
+        xs: X coordinates (columns) of keypoints (len = N).
+        ys: Y coordinates (rows) of keypoints (len = N).
+
+    Returns:
+        The input image array with DAISY visualizations drawn in-place and returned.
+
+    Notes:
+        - Keypoints outside the image bounds are skipped.
+        - If a descriptor row is empty, that keypoint is skipped.
+        - Assumes `skimage.draw` is imported as `draw`.
+
+    Raises:
+        ValueError: If array lengths are inconsistent with `rings`, `histograms`,
+            or `orientations`. (Implicitly, index errors may arise if shapes mismatch.)
+    """
+    H, W, _ = descs_img.shape
+    for k_idx, (desc_x, desc_y) in enumerate(zip(xs, ys)):
+        # Draw center histogram sigma
+        color = [1, 0, 0]
+        desc_vec = descs[k_idx]  # shape [C]
+        if desc_vec.size == 0:
+            continue
+
+        if not (0 <= desc_x < W and 0 <= desc_y < H):
+            continue  # skip OOB keypoints
+
+        rows, cols, val = draw.circle_perimeter_aa(
+            desc_y, desc_x, int(sigmas[0])
+        )
+        draw.set_color(descs_img, (rows, cols), color, alpha=val)
+        max_bin = float(np.max(desc_vec)) if np.max(desc_vec) > 0 else 1.0
+
+        for o_num, o in enumerate(orientation_angles):
+            # Draw center histogram bins
+            bin_size = desc_vec[o_num] / max_bin
+            dy = sigmas[0] * bin_size * math.sin(o)
+            dx = sigmas[0] * bin_size * math.cos(o)
+            rows, cols, val = draw.line_aa(
+                desc_y, desc_x, int(desc_y + dy), int(desc_x + dx)
+            )
+            draw.set_color(descs_img, (rows, cols), color, alpha=val)
+        for r_num, r in enumerate(ring_radii):
+            color_offset = float(1 + r_num) / rings
+            color = (1 - color_offset, 1, color_offset)
+            for t_num, t in enumerate(theta):
+                # Draw ring histogram sigmas
+                hist_y = desc_y + int(round(r * math.sin(t)))
+                hist_x = desc_x + int(round(r * math.cos(t)))
+                rows, cols, val = draw.circle_perimeter_aa(
+                    hist_y, hist_x, int(sigmas[r_num + 1])
+                )
+                draw.set_color(descs_img, (rows, cols),
+                               color, alpha=val)
+
+                base = orientations + r_num * \
+                    (histograms * orientations) + t_num * orientations
+
+                for o_num, o in enumerate(orientation_angles):
+                    # Draw histogram bins
+                    bin_size = desc_vec[base + o_num] / max_bin
+                    dy = sigmas[r_num + 1] * bin_size * math.sin(o)
+                    dx = sigmas[r_num + 1] * bin_size * math.cos(o)
+                    rows, cols, val = draw.line_aa(
+                        hist_y, hist_x, int(
+                            hist_y + dy), int(hist_x + dx)
+                    )
+                    draw.set_color(
+                        descs_img, (rows, cols), color, alpha=val)
+    return descs_img
 
 
+def display_daisy_descriptors(
+    descs_img: np.ndarray,
+    visualization_title: str
+) -> None:
+    """Display an image with DAISY overlays using matplotlib.
+
+    Args:
+        descs_img: RGB image (H, W, 3) containing the rendered DAISY glyphs.
+        visualization_title: Title string for the figure.
+
+    Returns:
+        None. Shows the figure and closes on user action depending on backend.
+
+    Notes:
+        - Uses `dpi=600` and hides axes.
+        - Assumes matplotlib is available as `plt`.
+    """
+
+    fig, ax = plt.subplots(dpi=600)
+    ax.axis("off")
+    ax.imshow(descs_img)
+    ax.set_title(visualization_title)
+    plt.show()

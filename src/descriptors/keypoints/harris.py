@@ -37,8 +37,9 @@ def detect_harris_keypoints_from_array(
     blockSize: int = 3,
     ksize: int = 3,
     k: float = 0.04,
-    thresh_rel: float = 0.01,
-    nms_ksize: int = 3
+    thresh_rel: float = 0.4,
+    nms_ksize: int = 3,
+    **kwargs
 ) -> tuple[list[cv2.KeyPoint], np.ndarray]:
     """
     Detect Harris keypoints from an image array and return cv2.KeyPoint objects.
@@ -52,7 +53,7 @@ def detect_harris_keypoints_from_array(
         k (float, optional): Harris detector free parameter (0.04-0.06).
             Defaults to 0.04.
         thresh_rel (float, optional): Relative threshold for corner response.
-            Defaults to 0.01.
+            Defaults to 0.4.
         nms_ksize (int, optional): Kernel size for non-maximum suppression.
             Defaults to 3.
 
@@ -71,14 +72,24 @@ def detect_harris_keypoints_from_array(
 
     # Convert to cv2.KeyPoint list
     ys, xs = np.where(peaks)
-    keypoints = [cv2.KeyPoint(float(x), float(y), size=blockSize)
-                 for y, x in zip(ys, xs)]
+    keypoints = [
+        cv2.KeyPoint(
+            float(x),
+            float(y),
+            size=blockSize,
+            response=float(Rn[y, x])
+        )
+        for y, x in zip(ys, xs)
+    ]
 
-    return keypoints, Rn
+    # Sort keypoints by response descending
+    keypoints.sort(key=lambda k: k.response, reverse=True)
+    return keypoints
 
 
 def detect_harris_keypoints(
-    img_path: str, **kwargs
+    img_path: str,
+    **kwargs
 ) -> tuple[list[cv2.KeyPoint], np.ndarray]:
     """Detects Harris keypoints from an image path.
 
@@ -102,13 +113,15 @@ def detect_harris_keypoints(
 
 def detect_harris_laplacian_keypoints_from_array(
     img_bgr: np.ndarray,
-    sigmas: Iterable[float] = (1.2, 1.6, 2.2, 3.0, 4.2, 6.0, 8.0),
+    sigmas: Iterable[float] = (
+        1, 1.2, 1.6, 2.2, 3.0, 4.2, 6.0, 8.0, 16.0, 24.0, 30.0, 50.0),
     blockSize: int = 3,
     ksize: int = 3,
     k: float = 0.04,
     harris_thresh_rel: float = 0.01,
     harris_thresh_pct: float = 99.5,
     base_nms_ksize: int = 3,
+    **kwargs
 ) -> List[cv2.KeyPoint]:
     """Harris-Laplacian keypoints with per-scale thresholds and NMS scaling.
 
@@ -203,7 +216,7 @@ def detect_harris_laplacian_keypoints_from_array(
             )
             keypoints.append(kp)
 
-    # (Optional) sort keypoints by response descending
+    # Sort keypoints by response descending
     keypoints.sort(key=lambda k: k.response, reverse=True)
     return keypoints
 

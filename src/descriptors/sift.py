@@ -1,11 +1,14 @@
+
+from typing import Tuple, Callable, Optional
+
 import cv2
 import numpy as np
-from typing import Tuple, Callable, Optional
 
 from src.data.extract import read_image
 from src.descriptors.grayscale import convert_img_to_gray_scale
 
 SIFT_DESCRIPTOR_DIM = 128
+
 
 def compute_sift_descriptor_from_array(
     img_bgr: np.ndarray,
@@ -38,7 +41,7 @@ def compute_sift_descriptor_from_array(
         descriptor: Aggregated descriptor (1D) or all descriptors (2D).
     """
     img_gray = convert_img_to_gray_scale(img_bgr)
-    
+
     sift = cv2.SIFT_create(
         nfeatures=nfeatures,
         nOctaveLayers=nOctaveLayers,
@@ -46,14 +49,15 @@ def compute_sift_descriptor_from_array(
         edgeThreshold=edgeThreshold,
         sigma=sigma
     )
-    
+
     if keypoint_detector is not None:
         keypoints = keypoint_detector(img_bgr, **keypoint_params)
     else:
         keypoints = sift.detect(img_gray, None)
 
     if len(keypoints) > nfeatures:
-        keypoints = sorted(keypoints, key=lambda kp: kp.response, reverse=True)[:nfeatures]
+        keypoints = sorted(keypoints, key=lambda kp: kp.response, reverse=True)[
+            :nfeatures]
 
     if not keypoints:
         if aggregation == 'mean':
@@ -61,12 +65,12 @@ def compute_sift_descriptor_from_array(
         return [], np.array([])
 
     keypoints, descriptors = sift.compute(img_gray, keypoints)
-    
+
     if descriptors is None:
         if aggregation == 'mean':
             return [], np.zeros(SIFT_DESCRIPTOR_DIM, dtype=np.float32)
         return [], np.array([])
-    
+
     if aggregation == 'mean':
         aggregated = np.mean(descriptors, axis=0)
         return keypoints, aggregated.astype(np.float32)

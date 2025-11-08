@@ -35,15 +35,19 @@ def detect_dog_keypoints_from_array(
 
     # Create SIFT detector (uses DoG internally)
     sift = cv2.SIFT_create(
-        nOctaveLayers = num_scales,
-        contrastThreshold = contrast_threshold,
-        edgeThreshold = edge_threshold,
-        sigma= sigma_base
+        nOctaveLayers=num_scales,
+        contrastThreshold=contrast_threshold,
+        edgeThreshold=edge_threshold,
+        sigma=sigma_base
     )
 
     keypoints = sift.detect(img_gray, None)
-    
+
+    # Sort keypoints by response descending
+    keypoints = list(keypoints)
+    keypoints.sort(key=lambda k: k.response, reverse=True)
     return keypoints
+
 
 def detect_dog_keypoints(
         img_path: str,

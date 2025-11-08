@@ -60,7 +60,7 @@ def compute_ycbcr_histogram_from_array(
     cr = img_ycrcb[:, :, 1]
     cb = img_ycrcb[:, :, 2]
 
-    # Compute per-channel histograms (8-bit ranges; Cb/Cr centered ~128 but still 0–255)
+    # Compute per-channel histograms (8-bit ranges; Cb/Cr centered ~128 but still 0-255)
     hist_y,  bin_edges = compute_histogram(
         y,  values_per_bin=values_per_bin, density=True)
     hist_cb, _ = compute_histogram(
