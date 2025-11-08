@@ -21,7 +21,7 @@ def compute_hog_descriptor_from_array(
     nlevels: int = 64,
     signed_gradients: bool = False,
     patch_size: int = 64,
-    aggregation: str = 'mean',
+    aggregation: str = 'none',
     nfeatures: Optional[int] = None,
     **keypoint_params
 ) -> Tuple[list, np.ndarray]:
