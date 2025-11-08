@@ -121,9 +121,10 @@ DESC_NAME_TO_FUNC = {
     'Block_Bior44_HSV_4x4_LVL3': 'block_bior44_hsv_4x4_lvl3',
     'Block_Bior44_HSV_8x8_LVL3': 'block_bior44_hsv_8x8_lvl3',
     'SIFT_DOG_DEFAULT': 'sift_dog_default',
-    'SIFT_DOG_SOFT': 'sift_dog_soft',
-    'SIFT_DOG_STRICT': 'sift_dog_strict',
-    'SIFT_HARRIS': 'sift_harris'
+    'SIFT_HARRIS': 'sift_harris',
+    'SIFT_HARRIS_LAPLACIAN_DEFAULT': 'sift_harris_laplacian_default',
+    'HOG_DOG_DEFAULT': 'hog_dog_default',
+    'DAISY_DOG_DEFAULT': 'daisy_dog_default'
 }
 
 DIST_NAME_TO_FUNC = {

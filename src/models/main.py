@@ -14,7 +14,9 @@ from src.descriptors import (grayscale,
                              block_histogram,
                              dct,
                              lbp,
-                             wavelet)
+                             wavelet,
+                             daisy,
+                             hog)
 from src.distances import (bhattacharyya,
                            canberra,
                            chi_2,
@@ -68,23 +70,10 @@ KEYPOINT_DETECTORS = {
         edge_threshold=10.0,
         **kwargs
     ),
-    'dog_soft': lambda img_bgr, **kwargs: dog.detect_dog_keypoints_from_array(
-        img_bgr,
-        num_scales=4,
-        sigma_base=1.1,
-        contrast_threshold=0.01,
-        edge_threshold=3.0,
-        **kwargs
-    ),
-    'dog_strict': lambda img_bgr, **kwargs: dog.detect_dog_keypoints_from_array(
-        img_bgr,
-        num_scales=6,
-        sigma_base=2.0,
-        contrast_threshold=0.05,
-        edge_threshold=12.0,
-        **kwargs
-    ),
     'harris_default': lambda img_bgr, **kwargs: harris.detect_harris_keypoints_from_array(
+        img_bgr, **kwargs
+    ),
+    'harris_laplacian_default': lambda img_bgr, **kwargs: harris.detect_harris_laplacian_keypoints_from_array(
         img_bgr, **kwargs
     )
 }
@@ -96,24 +85,36 @@ LOCAL_DESCRIPTORS_FUNCTIONS = {
         nfeatures=250,
         **kwargs
     ),
-    'sift_dog_soft': lambda img_path, **kwargs: sift.compute_sift_descriptor(
-        img_path,
-        keypoint_detector=KEYPOINT_DETECTORS['dog_soft'],
-        nfeatures=250,
-        **kwargs
-    ),
-    'sift_dog_strict': lambda img_path, **kwargs: sift.compute_sift_descriptor(
-        img_path,
-        keypoint_detector=KEYPOINT_DETECTORS['dog_strict'],
-        nfeatures=250,
-        **kwargs
-    ),
-    'sift_harris': lambda img_path, **kwargs: sift.compute_sift_descriptor(
+    'sift_harris_default': lambda img_path, **kwargs: sift.compute_sift_descriptor(
         img_path,
         keypoint_detector=KEYPOINT_DETECTORS['harris_default'],
         nfeatures=250,
         **kwargs
     ),
+    'sift_harris_laplacian_default': lambda img_path, **kwargs: sift.compute_sift_descriptor(
+        img_path,
+        keypoint_detector=KEYPOINT_DETECTORS['harris_laplacian_default'],
+        nfeatures=250,
+        **kwargs
+    ),
+    'hog_dog_default': lambda img_path, **kwargs: hog.compute_hog_descriptor(
+        img_path,
+        keypoint_detector=KEYPOINT_DETECTORS['dog_default'],
+        win_size=(32, 32),
+        nfeatures=250,
+        **kwargs
+    ),
+    'daisy_dog_default': lambda img_path, **kwargs: daisy.compute_daisy_descriptor(
+        img_path,
+        keypoint_detector=KEYPOINT_DETECTORS['dog_default'],
+        top_n=250,              
+        adjust_to_size=True,    
+        normalization='l2',     
+        orientations=8,         
+        visualize=False,        
+        **kwargs
+    ),
+
 }
 
 # Histogram descriptor functions
@@ -340,6 +341,13 @@ class ComputeImageFeatures:
             else:
                 # Use our custom distance matrix computation
                 dist_matrix = distance_func(desc_q, desc_m, batch_size=batch_size)
+                # Handle cases where there are fewer than 2 descriptors
+                num_neighbors = min(2, dist_matrix.shape[1])
+                if num_neighbors < 2:
+                    results.append((img_id, 0, 0))
+                    match_data.append({"index": img_id, "good_matches": [], "inlier_matches": []})
+                    continue
+
                 sorted_idx = np.argsort(dist_matrix, axis=1)[:, :2]
                 sorted_dists = np.take_along_axis(dist_matrix, sorted_idx, axis=1)
                 matches_knn = [
@@ -351,7 +359,14 @@ class ComputeImageFeatures:
                 ]
 
             # Ratio test 
-            good_matches = [m for m, n in matches_knn if m.distance < ratio_thresh * n.distance]
+            # good_matches = [m for m, n in matches_knn if m.distance < ratio_thresh * n.distance]
+            good_matches = []
+            for pair in matches_knn:
+                if len(pair) < 2:
+                    continue  # skip if less than 2 neighbors found
+                m, n = pair
+                if m.distance < ratio_thresh * n.distance:
+                    good_matches.append(m)
             num_tentative = len(good_matches)
 
             if num_tentative < 4:
@@ -381,5 +396,4 @@ class ComputeImageFeatures:
             for (img_id, _, _) in results[:k]
         ]
         return results[:k], sorted_match_data
-
 

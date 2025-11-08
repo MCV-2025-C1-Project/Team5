@@ -126,9 +126,10 @@ ALL_DESCRIPTORS = [
     'block_bior44_hsv_4x4_lvl3',
     'block_bior44_hsv_8x8_lvl3',
     'sift_dog_default',
-    'sift_dog_soft',
-    'sift_dog_strict',
-    'sift_harris'
+    'sift_harris_default',
+    'sift_harris_laplacian_default',
+    'hog_dog_default',
+    'daisy_dog_default'
 ]
 
 ALL_DISTANCE_METRICS = [
@@ -248,9 +249,10 @@ DESCRIPTOR_NAMES = {
     'block_bior44_hsv_4x4_lvl3': 'Block_Bior44_HSV_4x4_LVL3',
     'block_bior44_hsv_8x8_lvl3': 'Block_Bior44_HSV_8x8_LVL3',
     'sift_dog_default': 'SIFT_DOG_DEFAULT',
-    'sift_dog_soft': 'SIFT_DOG_SOFT',
-    'sift_dog_strict': 'SIFT_DOG_STRICT',
-    'sift_harris': 'SIFT_HARRIS'
+    'sift_harris_default': 'SIFT_HARRIS_DEFAULT',
+    'sift_harris_laplacian_default': 'SIFT_HARRIS_LAPLACIAN_DEFAULT',
+    'hog_dog_default': 'HOG_DOG_DEFAULT',
+    'daisy_dog_default': 'DAISY_DOG_DEFAULT' 
 }
 
 DISTANCE_NAMES = {
