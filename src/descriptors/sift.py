@@ -18,7 +18,7 @@ def compute_sift_descriptor_from_array(
     contrastThreshold: float = 0.04,
     edgeThreshold: float = 10.0,
     sigma: float = 1.6,
-    aggregation: str = 'mean',
+    aggregation: str = 'none',
     **keypoint_params
 ) -> Tuple[list, np.ndarray]:
     """
