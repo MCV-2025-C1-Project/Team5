@@ -2,6 +2,7 @@ from pathlib import Path
 import numpy as np
 from tqdm import tqdm
 import cv2
+import pickle
 
 from src.descriptors import (grayscale,
                              hsv,
@@ -66,7 +67,7 @@ KEYPOINT_DETECTORS = {
         img_bgr,
         num_scales=5,
         sigma_base=1.6,
-        contrast_threshold=0.03,
+        contrast_threshold=0.01,
         edge_threshold=10.0,
         **kwargs
     ),
@@ -100,7 +101,6 @@ LOCAL_DESCRIPTORS_FUNCTIONS = {
     'hog_dog_default': lambda img_path, **kwargs: hog.compute_hog_descriptor(
         img_path,
         keypoint_detector=KEYPOINT_DETECTORS['dog_default'],
-        win_size=(32, 32),
         nfeatures=250,
         **kwargs
     ),
@@ -108,7 +108,7 @@ LOCAL_DESCRIPTORS_FUNCTIONS = {
         img_path,
         keypoint_detector=KEYPOINT_DETECTORS['dog_default'],
         top_n=250,              
-        adjust_to_size=True,    
+        adjust_to_size=False,    
         normalization='l2',     
         orientations=8,         
         visualize=False,        
@@ -248,6 +248,34 @@ class ComputeImageFeatures:
 
     def _build_database(self):
         """Compute and store descriptors (global or local) for all museum images."""
+        cache_dir = Path("data/cache")
+        cache_dir.mkdir(parents=True, exist_ok=True)
+
+        cache_path = cache_dir / f"{self.mode}_{self.descriptor_name}.pkl"
+
+        if cache_path.exists():
+            logger.info(f"Loading cached features from {cache_path}")
+            with open(cache_path, "rb") as f:
+                features = pickle.load(f)
+
+            # Rebuild cv2.KeyPoint objects from tuples
+            if self.mode == "local":
+                for museum_id, data in features.items():
+                    kp_tuples = data["keypoints"]
+                    data["keypoints"] = [
+                        cv2.KeyPoint(
+                            x=pt[0][0],
+                            y=pt[0][1],
+                            size=pt[1],
+                            angle=pt[2],
+                            response=pt[3],
+                            octave=pt[4],
+                            class_id=pt[5]
+                        )
+                        for pt in kp_tuples
+                    ]
+            return features
+        
         features = {}
 
         for img_path in tqdm(sorted(self.museum_dir.glob("*.jpg"))):
@@ -267,6 +295,24 @@ class ComputeImageFeatures:
                 keypoints, desc = descriptor_func(str(img_path))
                 if desc is not None and len(desc) > 0:
                     features[museum_id] = {"keypoints": keypoints, "descriptors": desc}
+
+        features_serializable = {}
+
+        if self.mode == "local":
+            for museum_id, data in features.items():
+                kp_serializable = [
+                    (kp.pt, kp.size, kp.angle, kp.response, kp.octave, kp.class_id)
+                    for kp in data["keypoints"]
+                ]
+                features_serializable[museum_id] = {
+                    "keypoints": kp_serializable,
+                    "descriptors": data["descriptors"]
+                }
+        else:
+            features_serializable = features
+
+        with open(cache_path, "wb") as f:
+            pickle.dump(features_serializable, f)
 
         return features
     
