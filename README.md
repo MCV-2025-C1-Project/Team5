@@ -48,21 +48,39 @@ To learn more about the experimentation process and the choice of optimal parame
 
 - **Multiple Image Descriptors:** Extract diverse visual representations capturing color, texture, and spatial information.  
   
-  **Color-based descriptors:**
-  - Grayscale Histogram
-  - RGB Histogram
-  - HSV Histogram
-  - YCbCr Histogram
-  - LAB Histogram
-  - 2 Dimension Histogram
-  - 3 Dimension Histogram
-  - Block-based Histogram
-  - Spatial Pyramid Histogram
-  
-  **Texture-based descriptors:**
-  - DCT (Discrete Cosine Transform) - Block-based frequency domain features with zigzag coefficient extraction
-  - LBP (Local Binary Patterns) - Multiscale texture patterns capturing local intensity variations
-  - Wavelet Transform (DWT) - Multi-resolution analysis with statistical features from wavelet subbands
+- **Multiple Image Descriptors:** Extract diverse visual representations capturing color, texture, spatial, and keypoint-based information.  
+
+  **Global descriptors:**  
+  Capture overall image statistics or structure, producing one descriptor per image.
+
+  - **Color-based descriptors:**
+    - Grayscale Histogram  
+    - RGB Histogram  
+    - HSV Histogram  
+    - YCbCr Histogram  
+    - LAB Histogram  
+    - 2 Dimension Histogram  
+    - 3 Dimension Histogram  
+    - Block-based Histogram  
+    - Spatial Pyramid Histogram  
+
+  - **Texture-based descriptors:**
+    - DCT (Discrete Cosine Transform)  
+    - LBP (Local Binary Patterns)  
+    - Wavelet Transform (DWT)  
+
+  **Local descriptors:**  
+  Capture distinctive image regions and their local structures for keypoint-based matching and retrieval.
+
+  - **Keypoint detectors:**
+    - DoG (Difference of Gaussians)  
+    - Harris  
+    - Harris-Laplacian  
+
+  - **Feature descriptors:**
+    - SIFT  
+    - DAISY  
+    - HOG  
 
 - **Multiple Distance Metrics:** Measures similarity between images using diverse statistical and geometric criteria.
   - Euclidean Distance
@@ -83,7 +101,7 @@ To learn more about the experimentation process and the choice of optimal parame
 - **Visualization:** Provides intuitive insight into system performance and retrieval quality.
   - Heatmaps for comprehensive evaluation
   - Query-retrieval result visualizations
-
+  - Matches between queries and predicted retrieves
 
 ## Project Organization
 
@@ -150,8 +168,10 @@ Place the datasets in the `data/raw/` folder as follows:
         ├──BBDD/            <- Database of paintings
         ├──qsd1_w1/         <- Query set for week 1 development
         ├──qsd2_w2/         <- Query set for week 2 development
+        ├──...
         ├──qst1_w1/         <- Query set for week 1 testing
-        └──qst_w2/          <- Query set for week 2 testing
+        ├──qst_w2/          <- Query set for week 2 testing
+        └──...
 ```
 
 
@@ -164,7 +184,9 @@ Once the environment and data are set up, you can execute the pipeline to perfor
 
 <!---#### To execute manually--->
 
-The background segmentation module removes non-artwork regions using robust color-based analysis in LAB and HSV spaces, isolating the painting for cleaner descriptor extraction and retrieval.
+The background segmentation module removes non-artwork regions using robust color-based analysis in LAB and HSV spaces, isolating the painting for cleaner descriptor extraction and retrieval. Additionally, it includes an automatic **noise detection and removal step**:
+- Noise is detected using the **Laplacian filter**, which identifies images with strong local intensity variations.
+- If noise is present, it is removed using a **Median filter**, which effectively smooths the image while preserving edges and fine details.
 
 **Example command**
 
@@ -187,223 +209,103 @@ This command processes all images in the default dataset folder, producing:
 Run `python -m src.models.seg --help` to see all available options.
 
 
-### 2. Index the database
+### 2. Run the full pipeline
 
-The descriptor computator module automates the extraction of global color descriptors for all images in a given dataset folder. It forms the first stage of the CBIR pipeline, generating a numerical representation for each image based on its color distribution.
+The retrieval system can be executed end-to-end using the `run` module, which performs **feature extraction**, **image retrieval**, and **evaluation** in a single step.
+
+This module automatically loads the museum and query images, computes the selected descriptors, compares them using the specified distance metric, ranks the top-K most similar results, and evaluates the performance against the provided ground truth.
 
 **Workflow**
 
-1. **Load images** from the specified dataset folder.
-2. **Compute histograms** using the chosen descriptor.
-3. **Aggregate and serialize** all image descriptors into a single .pkl file under data/descriptors/.
 
-<!---
-#### To execute automatically
+1. **Load datasets** — both query and museum images are read from their respective folders.  
+   If the descriptors for the dataset have already been computed in a previous run, they are automatically **loaded from their serialized `.pkl` files** instead of being recomputed, saving time and ensuring reproducibility.  
 
-For convenience, the project includes a **Makefile** that automates the execution of the main stages of the pipeline. You can simply run:
+2. **Feature extraction** — descriptors are generated for each image according to the selected descriptor type and mode (`global` or `local`).  
+   Multiple combinations of descriptors and distance metrics can be evaluated within the same run; the system automatically selects and stores the configuration that achieves the **highest mAP score**.  
 
-```bash
-make descriptors
-```
+3. **Similarity computation** — each query descriptor is compared with all museum descriptors using the chosen distance metric.  
 
+4. **Ranking** — the system retrieves and ranks the top-*K* most visually similar paintings for each query image.  
 
-> 💡 % TODO: update This command computes all descriptors in the HSV and LAB color spaces with a bin size of 5, which are the best configuration found during experimentation, for both the Museum and Query datasets.  
+5. **Evaluation** — performance is measured using **mAP@K** and **Top-K accuracy** metrics, allowing comparison between different descriptor–distance configurations.  
 
-#### To execute manually
+6. **Result saving and visualization** —  
+   For the best-performing configuration, the system automatically:
+   - **Generates and saves** a `.pkl` file containing the ranked retrieval results (one list of retrieved image indices per query).  
+   - **Creates visualizations** that include:
+     - Global **heatmaps** summarizing descriptor and distance performance.  
+     - **Query–retrieval samples** showing the most similar results for representative queries.  
+     - **Local matches visualization** (for `mode local`) highlighting detected keypoints and their correspondences between the query and retrieved images.   
 
-If it is desired to set different hyperparameter configurations, it is also possible to execute manually using a simple command.--->
+**Feature extraction modes**
 
-**Key Features**
+The system supports two types of feature extraction strategies, specified using the `--mode` argument:
 
-**Color-based descriptors:**
-- Supports multiple color spaces: Grayscale, RGB, HSV, Lab, and YCbCr.
-- Supports agregation of consecutive values of the histogram in the same bin.
-- Supports color representation as 2D and 3D histograms.
-- Supports spatial structure influence by computing histograms by block or as a spatial pyramid.
+| Mode | Description |
+|------|--------------|
+| `global` | Computes a single descriptor per image, summarizing its overall color, texture, or structure. Used for color histograms, texture descriptors, etc. |
+| `local` | Extracts keypoints and computes descriptors locally around them (e.g., SIFT, DAISY, or HOG), enabling fine-grained image matching. |
 
-**Texture-based descriptors:**
-- **DCT (Discrete Cosine Transform)**: Block-based frequency analysis with configurable grid size, block size, and zigzag coefficient extraction.
-- **LBP (Local Binary Patterns)**: Multiscale texture analysis with configurable radius and number of sampling points per scale.
-- **Wavelet (DWT)**: Multi-level wavelet decomposition with statistical feature extraction (mean, variance, std) from all subbands.
+**Example commands**
 
-**General features:**
-- Automatically loads all .jpg or .jpeg images from the input folder.
-- Stores computed descriptors and metadata in a single .pkl file for later use in retrieval and evaluation.
-
-
-**Example command**
-
-To process the museum's database:
-
-``` bash
-python -m src.descriptors.compute_descriptors \
-    --descriptor spatial_pyramid_hsv_lvl4 \
-    --input data/raw/BBDD \
-    --outdir data/descriptors \
-    --values_per_bin 8
-```
-
-This process must be done to query datasets as well, example command:
-
-To process the raw images (1st week case):
-
-``` bash
-python -m src.descriptors.compute_descriptors \
-    --descriptor spatial_pyramid_hsv_lvl4 \
-    --input data/raw/qsd1_w1 \
-    --outdir data/descriptors/w1 \
-    --values_per_bin 8
-```
-
-To process the segmented images with the background removed (2nd week case):
-
-``` bash
-python -m src.descriptors.compute_descriptors \
-    --descriptor spatial_pyramid_hsv_lvl4 \
-    --input data/raw/qsd2_w2 \
-    --outdir data/descriptors/w2 \
-    --values_per_bin 8
-```
-
-**Command-Line Arguments**
-
-| Parameter | Description |
-|------------|-------------|
-| `--descriptor` | Descriptor or color space type. |
-| `--input` | Path to the dataset folder containing the images. |
-| `--outdir` | Directory where the computed `.pkl` descriptor files will be saved. |
-| `--values_per_bin` | Number of intensity values per histogram bin (controls descriptor granularity). |
-
-
-Run `python -m src.descriptors.compute_descriptors --help` to see all available options.
-
-### 3. Find matching
-
-
-Once the descriptors for both the **query dataset** and the **museum database** are generated, this step performs the **retrieval phase** — comparing the query descriptors against all database descriptors to find the most visually similar paintings.
-
-For each query image, the script:
-1. Loads precomputed descriptors from `.pkl` files.
-2. Computes pairwise distances or similarities using the selected metric.
-3. Retrieves the top-*K* database images with the smallest (or most similar) distance scores.
-4. Saves the ranked results as a `.pkl` file inside the output directory.
-
-**Supported Metrics**
-
-The retrieval system supports multiple distance and similarity metrics, allowing flexible experimentation:
-
-| Metric | Description |
-|---------|-------------|
-| `bhattacharyya` | Statistical distance between probability distributions. |
-| `canberra` | Weighted version of the Manhattan distance. |
-| `chi_2` | Measures dissimilarity between two histograms. |
-| `l1` | Manhattan (city-block) distance. |
-| `correlation` | Measures correlation-based similarity between histograms. |
-| `js_divergence` | Symmetric and smoothed version of Kullback-Leibler divergence. |
-| `intersection` | Histogram intersection similarity. |
-| `hellinger` | Measures distance between normalized distributions. |
-| `euclidean` | Standard L2 distance. |
-| `cosine` | Cosine similarity between feature vectors. |
-
-
-<!---
-#### To execute automatically
-
-Once the descriptors are created, you can run the **retrieval stage** to find the most visually similar paintings between the **query** and **museum** datasets.
-
-You can execute all retrieval experiments automatically using:
-
-
-```bash
-make find_matching
-```
-
-#### To execute manually
---->
-
-
-**Example command**
-
-```bash
-python -m src.models.find_matches \
-    data/descriptors/qsd1_w1_hsv_vpb5.pkl \
-    data/descriptors/BBDD_hsv_vpb5.pkl \
-    --metric canberra \
-    --k 10 \
-    --outdir data/results
-```
-
-This command retrieves the 10 most similar paintings from the museum database for each query image using the Canberra distance, and saves the ranked results in `data/results`.
-
-**Command-Line Arguments**
-
-Run `python -m src.descriptors.find_matches --help` to see all available options.
-
-**Output format**
-
-A .pkl file storing, for each query image, the list of top-K most similar database image IDs.
-
-```python
-[
-    [23, 45, 11, 7, 38, 9, 27, 56, 18, 40],  # Top-10 matches for Query 1
-    [4, 29, 33, 20, 8, 15, 6, 17, 1, 43],    # Top-10 matches for Query 2
-    ...
-]
-```
-
-### 4. Evaluate descriptors and distances
-
-To evaluate with the 1st week's dataset:
+To evaluate on the **1st week dataset** (global descriptors):
 
 ```bash
 python -m src.models.run \
+    --mode global
     --query_dir data/raw/qsd1_w1 \
     --museum_dir data/raw/BBDD \
     --ground_truth data/raw/qsd1_w1/gt_corresps.pkl \
-    --values_per_bin 8 \
+    --values_per_bin 5 \
     --output_dir results/w1 \
     --k 5 \
-    --descriptors spatial_pyramid_hsv_lvl4 \
-    --distances canberra.canberra_distance
-```
+    --descriptors hsv \
+    --distances canberra.canberra_distance \
+```   
 
-To evaluate with the 2nd week's dataset:
+To evaluate on the **2st week dataset** (global descriptors):
 
 ```bash
 python -m src.models.run \
-    --query_dir data/raw/qsd2_w2 \
+    --mode global
+    --query_dir data/raw/qsd1_w2 \
     --museum_dir data/raw/BBDD \
-    --ground_truth data/raw/qsd2_w2/gt_corresps.pkl \
+    --ground_truth data/raw/qsd1_w2/gt_corresps.pkl \
     --values_per_bin 8 \
     --output_dir results/w2 \
     --k 5 \
     --descriptors spatial_pyramid_hsv_lvl4 \
-    --distances canberra.canberra_distance
-```
+    --distances canberra.canberra_distance \
+```   
+    
+To evaluate on the **3st week dataset** (global descriptors):
 
-#### Hyperparameters
+```bash
+python -m src.models.run \
+    --mode global
+    --query_dir data/raw/qsd1_w3 \
+    --museum_dir data/raw/BBDD \
+    --ground_truth data/raw/qsd1_w3/gt_corresps.pkl \
+    --output_dir results/w3 \
+    --k 5 \
+    --descriptors dct_lab_4x4_16coeffs \
+    --distances canberra.canberra_distance \
+```  
 
-The main hyperparameters can be configured when running descriptor extraction or retrieval scripts:
+To evaluate on the **4st week dataset** (local descriptors):
 
-| Parameter | Description |
-|-----------|-------------|
-| `--query_dir` | Directory containing query images. |
-| `--museum_dir` | Directory containing museum (database) images. |
-| `--ground_truth` | Path to the ground truth file (for evaluation). |
-| `--values_per_bin` | Number of intensity values per histogram bin (controls descriptor granularity). |
-| `--output_dir` | Directory where descriptors or results will be saved. |
-| `--k` | Number of top results to retrieve per query. |
-| `--descriptors` | Descriptor type(s) or color space(s) to use. |
-| `--distances` | Distance metric(s) used to compare descriptors. |
-
-Run `python -m src.models.run --help` to see all available options.
-
-
-**Metrics Explanation**
-- **mAP@1**: Mean Average Precision considering only the top-1 retrieved image
-- **mAP@5**: Mean Average Precision considering top-5 retrieved images
-- Higher values are better (range: 0.0 to 1.0)
-
+```bash
+python -m src.models.run \
+    --mode local
+    --query_dir data/raw/qsd1_w4 \
+    --museum_dir data/raw/BBDD \
+    --ground_truth data/raw/qsd1_w4/gt_corresps.pkl \
+    --output_dir results/w4 \
+    --k 5 \
+    --descriptors sift_dog_default \
+    --distances l1.compute_l1_distance \
+```  
 
 ## Methodology
 
