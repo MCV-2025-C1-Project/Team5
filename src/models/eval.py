@@ -2,7 +2,6 @@ from pathlib import Path
 from typing import List
 import pickle
 from tqdm import tqdm
-import itertools
 from src.distances import (bhattacharyya,
                            canberra,
                            chi_2,
@@ -264,46 +263,6 @@ DISTANCE_NAMES = {
 }
 
 
-def if_swapped(predictions_list, gt_list, k=5):
-    """
-    Find the best matching between predictions and ground truth even if any edge case the painting list order is swapped.
-
-    For multi-painting images, the order of segmented paintings might not match
-    the ground truth order. This function returns the retreival
-    the one with the highest score. If GT contains -1 or there is a single GT,
-    no swap check is attempted.
-
-    Args:
-        predictions_list: list[list[int]]   # [[p1,p2,...], [p1,p2,...], ...]
-        gt_list: list[int]                  # [gt1, gt2, ...]
-        k: Top-k to consider
-
-    Returns:
-        best_actual:    list[list[int]]  # shaped like predictions_list but with singletons [[gt_i], ...]
-        best_predicted: list[list[int]]  # same as input predictions_list
-        best_score:     float | None
-    """
-    # Single GT or -1 present → no swap
-    if len(gt_list) == 1 or gt_list == [-1] or (-1 in gt_list):
-        actual = [[gt] for gt in gt_list]
-        return actual, predictions_list, None
-
-    best_score = -1
-    best_perm = None
-
-    for perm in itertools.permutations(range(len(gt_list))):
-        actual = [[gt_list[i]] for i in perm]
-        predicted = predictions_list
-        score = mapk(actual, predicted, k=k)
-        if score > best_score:
-            best_score = score
-            best_perm = perm
-
-    best_actual = [[gt_list[i]] for i in best_perm]
-    best_predicted = predictions_list
-    return best_actual, best_predicted, best_score
-
-
 def evaluate_all_descriptors_and_distances(
     qsd1_dir: str, museum_dir: str,
     ground_truth_pickle: str, values_per_bin: int = 1,
@@ -440,23 +399,22 @@ def evaluate_all_descriptors_and_distances(
 
                     predictions_for_image.append(predicted_ids)
 
-                # swapped painting order matching (not working when gt_list has -1 or single item)
-                best_actual, best_predicted, _ = if_swapped(
-                    predictions_for_image, gt_list, k=max(k_values)
-                )
+                # Use ground truth in original order (no swapping)
+                actual = [[gt] for gt in gt_list]
+                predicted = predictions_for_image
 
                 # ---- Flatten for mAP (INCLUDING -1 policy) ----
                 # We keep -1 pairs so that mAP@k rewards ranking -1 within top-k
-                all_predicted_flat.extend(best_predicted)
-                all_actual_flat.extend(best_actual)
+                all_predicted_flat.extend(predicted)
+                all_actual_flat.extend(actual)
 
                 # ---- Image-level Top-k (including -1 as valid) ----
                 img_valid += 1
 
                 if gt_list == [-1]:
                     # Count a hit if any sub-painting predicts -1 within top-k
-                    top1_hit = any((pred and pred[0] == -1) for pred in best_predicted)
-                    top5_hit = any((-1 in (pred[:5] if pred else [])) for pred in best_predicted)
+                    top1_hit = any((pred and pred[0] == -1) for pred in predicted)
+                    top5_hit = any((-1 in (pred[:5] if pred else [])) for pred in predicted)
                     if top1_hit:
                         img_top1_hits += 1
                     if top5_hit:
@@ -465,11 +423,11 @@ def evaluate_all_descriptors_and_distances(
                     gt_set = set(gt_list)
 
                     # Union of first predictions across sub-paintings (allow -1; it just won't match gt_set)
-                    top1_preds = {pred[0] for pred in best_predicted if pred}
+                    top1_preds = {pred[0] for pred in predicted if pred}
 
                     # Union of top-5 predictions across sub-paintings
                     top5_preds = set()
-                    for pred in best_predicted:
+                    for pred in predicted:
                         if pred:
                             top5_preds.update(pred[:5])
 

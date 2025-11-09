@@ -2,7 +2,6 @@ from pathlib import Path
 import pickle
 from typing import Dict, List
 import os
-import itertools
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,7 +9,7 @@ from PIL import Image
 from sklearn.metrics import confusion_matrix
 import seaborn as sns
 
-from src.models.eval import evaluate_all_descriptors_and_distances, if_swapped
+from src.models.eval import evaluate_all_descriptors_and_distances
 from src.models.main import ComputeImageFeatures
 from src.visualization.plots import draw_matches
 from src.data.extract import read_image
@@ -561,25 +560,12 @@ def generate_comprehensive_analysis(
             gt = ground_truth[image_idx]
             gt_list = gt if isinstance(gt, list) else [gt]
 
-            # Find best for multi-painting images
-            _, best_results, best_score = if_swapped(
-                image_results, gt_list, k=k
-            )
+            # Use results in original order (no swapping)
+            results = image_results
 
-            # Log matching results for multi-painting queries
-            if len(gt_list) > 1 and gt_list != [-1] and -1 not in gt_list:
-                logger.debug(f"Image {image_idx}: Applied matching for {len(gt_list)} paintings")
-                logger.debug(f"  GT: {gt_list}")
-                logger.debug(f"  Original order top-1s: {[r[0] if r else -1 for r in image_results]}")
-                logger.debug(f"  Best top-1s: {[r[0] if r else -1 for r in best_results]}")
-                if best_score is not None:
-                    logger.debug(f"  Best score: {best_score:.4f}")
-
-            # Store original results (in file order)
+            # Store results (in file order)
             result_list.append(image_results)
-
-            # Store reordered results (best - if image order is swapped)
-            result_list_reordered.append(best_results)
+            result_list_reordered.append(results)
 
             # Store GT
             gt_labels.append(gt)
