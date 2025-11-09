@@ -390,7 +390,18 @@ We began by developing three **keypoint detectors** to identify salient and repe
 Once the keypoints were obtained, we implemented three **local descriptors** to encode the visual appearance around them: SIFT (Scale-Invariant Feature Transform), which computes gradient orientation histograms in local patches to achieve strong invariance to scale, rotation, and moderate illumination changes. HOG (Histogram of Oriented Gradients), which captures edge distributions within fixed grids, providing robust shape and contour information. DAISY, a dense descriptor inspired by SIFT, which samples gradient orientations in concentric rings, offering efficient and smooth representations well-suited for dense matching.
 
 To compare images, we developed a descriptor matching algorithm based on xxxx. This allowed us to evaluate the retrieval performance of different detector-descriptor combinations. The evaluation showed that the best overall performance was achieved using SIFT descriptors extracted from DoG keypoints, which provided the highest retrieval accuracy and most stable results across image variations. HOG and DAISY also performed competitively but were more sensitive to geometric and illumination changes.
-<!TODO add best metrics> 
+
+
+#### Matching pipeline
+
+To compare the extracted features, we implemented a local matching pipeline using KNN-based descriptor matching with ratio testing, bidirectional cross-checking, and RANSAC geometric verification to ensure robust correspondences.
+
+Additionally, we implemented an unknown query rejection strategy to discard queries not present in the database.
+This decision is based on three conditions: an insufficient number of bidirectional matches, a high ambiguity ratio between the top-2 candidates, or too few RANSAC inliers after geometric verification.
+Queries failing any of these thresholds are labeled as unknown and assigned -1.
+
+We evaluated multiple combinations of keypoint detectors (dog, harris, harris laplacian), descriptors (sift, hog, daisy), and distance metrics (euclidean, L1, canberra).
+The best performance was achieved with SIFT descriptors extracted from DoG keypoints and compared using the L1 norm, which provided the highest retrieval accuracy and most consistent matches across query images.
 
 
 ## Team members:
