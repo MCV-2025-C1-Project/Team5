@@ -141,7 +141,7 @@ DIST_NAME_TO_FUNC = {
 }
 
 
-def image_level_topk(gt_labels, result_list_reordered, k=5):
+def image_level_topk(gt_labels, result_list_reordered, k=10):
     """
     Image-level Top-1 / Top-k accuracy:
       • If GT == [-1], count as correct iff any sub-painting predicts -1 within Top-1/Top-k.
@@ -190,9 +190,102 @@ def image_level_topk(gt_labels, result_list_reordered, k=5):
     return valid, top1_hits, top1_acc, topk_hits, topk_acc
 
 
+def _generate_results_without_evaluation(
+    qsd_dir: str,
+    museum_dir: str,
+    values_per_bin: int,
+    output_dir: str,
+    k: int,
+    descriptors: List[str],
+    distance_metrics: List[str],
+    mode: str
+):
+    """Generate retrieval results without evaluation (when ground truth is not provided)."""
+    from collections import defaultdict
+
+    # Use first descriptor and distance if multiple provided
+    if descriptors is None or len(descriptors) == 0:
+        descriptor = 'hsv'  # default
+        logger.info(f"Using default descriptor: {descriptor}")
+    else:
+        descriptor = descriptors[0]
+        logger.info(f"Using descriptor: {descriptor}")
+
+    if distance_metrics is None or len(distance_metrics) == 0:
+        distance_metric = 'euclidean.euclidean_distance'  # default
+        logger.info(f"Using default distance: {distance_metric}")
+    else:
+        distance_metric = distance_metrics[0]
+        logger.info(f"Using distance: {distance_metric}")
+
+    # Create retrieval system
+    system = ComputeImageFeatures(
+        museum_dir, distance_metric, descriptor, mode, values_per_bin,
+        ground_truth=None  # No ground truth
+    )
+
+    # Get query images
+    qsd_path = Path(qsd_dir)
+    query_images = sorted(qsd_path.glob('*.jpg'))
+
+    logger.info(f"Processing {len(query_images)} query images...")
+
+    # Group query images by base ID (handle multi-painting images)
+    image_groups = defaultdict(lambda: {'base': None, 'sub_paintings': []})
+
+    for query_path in query_images:
+        filename = query_path.stem
+        if '_' in filename:
+            parts = filename.rsplit('_', 1)
+            base_id = parts[0]
+            try:
+                sub_idx = int(parts[1])
+                image_groups[base_id]['sub_paintings'].append((sub_idx, query_path))
+            except ValueError:
+                image_groups[filename]['base'] = query_path
+        else:
+            image_groups[filename]['base'] = query_path
+
+    # Process each image group
+    result_list = []
+
+    for base_id in sorted(image_groups.keys()):
+        group_data = image_groups[base_id]
+
+        # Determine which files to process
+        if len(group_data['sub_paintings']) > 0:
+            paintings_to_process = sorted(group_data['sub_paintings'], key=lambda x: x[0])
+        elif group_data['base'] is not None:
+            paintings_to_process = [(0, group_data['base'])]
+        else:
+            continue
+
+        # Retrieve results for each painting
+        image_results = []
+        for sub_idx, query_path in paintings_to_process:
+            if mode == 'local':
+                results, _ = system.retrieve(str(query_path), k=k)
+                retrieved = results
+            else:
+                retrieved = system.retrieve(str(query_path), k=k)
+
+            top_k_ids = [r[0] for r in retrieved]
+            image_results.append(top_k_ids)
+
+        result_list.append(image_results)
+
+    # Save result_list as pickle
+    result_pickle_path = f'{output_dir}/result.pkl'
+    with open(result_pickle_path, 'wb') as f:
+        pickle.dump(result_list, f)
+    logger.info(f"Saved top-{k} results to: {result_pickle_path}")
+
+    # Return None values for metrics since we didn't evaluate
+    return None, descriptor, distance_metric, None, result_list
+
 
 def plot_top_k_results(query_image_path, retrieved_results,
-                       museum_dir, save_path, k: int = 5):
+                       museum_dir, save_path, k: int = 10):
     """Plot top-k retrieval results for a query image."""
     _, axes = plt.subplots(1, k+1, figsize=(3*(k+1), 4))
 
@@ -237,10 +330,10 @@ def plot_top_k_results(query_image_path, retrieved_results,
 def generate_comprehensive_analysis(
     qsd_dir: str,
     museum_dir: str,
-    ground_truth_pickle: str,
+    ground_truth_pickle: str = None,
     values_per_bin: int = 1,
     output_dir: str = "data/results",
-    k: int = 5,
+    k: int = 10,
     descriptors: List[str] = None,
     distance_metrics: List[str] = None,
     mode: str = "global"
@@ -250,7 +343,7 @@ def generate_comprehensive_analysis(
     Args:
         qsd1_dir: Query images directory
         museum_dir: Museum database directory
-        ground_truth_pickle: Path to ground truth pickle
+        ground_truth_pickle: Path to ground truth pickle (optional, None to skip evaluation)
         values_per_bin: Number of values per histogram bin
         output_dir: Directory to save results
         k: Number of top-k retrievals
@@ -273,6 +366,16 @@ def generate_comprehensive_analysis(
     else:
         logger.info(f"Evaluating all distance metrics")
 
+    # Check if ground truth is provided
+    if ground_truth_pickle is None:
+        logger.info("No ground truth provided - skipping evaluation, generating results only")
+        # Simplified path without evaluation
+        return _generate_results_without_evaluation(
+            qsd_dir, museum_dir, values_per_bin, output_dir, k,
+            descriptors, distance_metrics, mode
+        )
+
+    # Full evaluation path with ground truth
     # Evaluate all descriptor-distance combinations
     all_results = evaluate_all_descriptors_and_distances(
         qsd_dir, museum_dir, ground_truth_pickle, values_per_bin,
@@ -294,15 +397,15 @@ def generate_comprehensive_analysis(
                 best_overall_map1 = metrics['mAP@1']
                 best_desc_map1 = descriptor
                 best_dist_map1 = distance
-            if metrics['mAP@5'] > best_overall_map5:
-                best_overall_map5 = metrics['mAP@5']
+            if metrics['mAP@10'] > best_overall_map5:
+                best_overall_map5 = metrics['mAP@10']
                 best_desc_map5 = descriptor
                 best_dist_map5 = distance
 
     logger.info(f"BEST OVERALL COMBINATIONS:")
     logger.info(f"   Best mAP@1: {best_desc_map1} + {best_dist_map1} "
                 f"= {best_overall_map1:.4f}")
-    logger.info(f"   Best mAP@5: {best_desc_map5} + {best_dist_map5} "
+    logger.info(f"   Best mAP@10: {best_desc_map5} + {best_dist_map5} "
                 f"= {best_overall_map5:.4f}")
 
     # Create comprehensive heatmap for all combinations
@@ -316,7 +419,7 @@ def generate_comprehensive_analysis(
     for i, descriptor in enumerate(descriptor_names):
         for j, distance in enumerate(distance_names):
             map1_matrix[i, j] = all_results[descriptor][distance]['mAP@1']
-            map5_matrix[i, j] = all_results[descriptor][distance]['mAP@5']
+            map5_matrix[i, j] = all_results[descriptor][distance]['mAP@10']
 
     # Create comprehensive heatmaps
     # mAP@1 heatmap
@@ -345,7 +448,7 @@ def generate_comprehensive_analysis(
     # mAP@5 heatmap
     _, ax = plt.subplots(figsize=(14, 8))
     im = ax.imshow(map5_matrix, cmap='YlOrRd', aspect='auto')
-    ax.figure.colorbar(im, ax=ax, label='mAP@5 Score')
+    ax.figure.colorbar(im, ax=ax, label='mAP@10 Score')
 
     ax.set_xticks(range(len(distance_names)))
     ax.set_yticks(range(len(descriptor_names)))
@@ -359,7 +462,7 @@ def generate_comprehensive_analysis(
                     ha="center", va="center",
                     color="black", fontweight='bold', fontsize=8)
 
-    ax.set_title('mAP@5 Performance: All Descriptor-Distance Combinations')
+    ax.set_title('mAP@10 Performance: All Descriptor-Distance Combinations')
     plt.tight_layout()
     plt.savefig(f'{output_dir}/comprehensive_heatmap_map5.png',
                 dpi=300, bbox_inches='tight')
@@ -639,7 +742,7 @@ def generate_comprehensive_analysis(
         'best_descriptor': best_desc_map5,
         'best_distance': best_dist_map5,
         'best_mAP@1': best_overall_map1,
-        'best_mAP@5': best_overall_map5,
+        'best_mAP@10': best_overall_map5,
         'top_1_accuracy_image_level': t1_acc,
         f'top_{k}_accuracy_image_level': tk_acc,
         'num_valid_images': num_images,

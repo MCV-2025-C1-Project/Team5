@@ -38,8 +38,9 @@ def main():
     parser.add_argument(
         '--ground_truth',
         type=str,
-        required=True,
-        help='Path to ground truth pickle file (e.g., gt_corresps.pkl)'
+        required=False,
+        default=None,
+        help='Path to ground truth pickle file (e.g., gt_corresps.pkl). Optional - if not provided, will skip evaluation but still generate result pickle.'
     )
 
     # Optional arguments
@@ -60,7 +61,7 @@ def main():
     parser.add_argument(
         '--k',
         type=int,
-        default=5,
+        default=10,
         help='Number of top-k retrievals to save'
     )
 
@@ -128,16 +129,19 @@ def main():
     # Validate paths
     query_path = Path(args.query_dir)
     museum_path = Path(args.museum_dir)
-    gt_path = Path(args.ground_truth)
 
     if not query_path.exists():
         raise FileNotFoundError(f"Query directory not found: {args.query_dir}")
     if not museum_path.exists():
         raise FileNotFoundError(
             f"Museum directory not found: {args.museum_dir}")
-    if not gt_path.exists():
-        raise FileNotFoundError(
-            f"Ground truth file not found: {args.ground_truth}")
+
+    # Validate ground truth if provided
+    if args.ground_truth is not None:
+        gt_path = Path(args.ground_truth)
+        if not gt_path.exists():
+            raise FileNotFoundError(
+                f"Ground truth file not found: {args.ground_truth}")
 
     logger.info("=" * 80)
     logger.info("IMAGE RETRIEVAL SYSTEM - COMPREHENSIVE ANALYSIS")
@@ -145,7 +149,7 @@ def main():
     logger.info(f"Mode:                {args.mode.upper()}")
     logger.info(f"Query Directory:     {args.query_dir}")
     logger.info(f"Museum Directory:    {args.museum_dir}")
-    logger.info(f"Ground Truth:        {args.ground_truth}")
+    logger.info(f"Ground Truth:        {args.ground_truth if args.ground_truth else 'None (evaluation disabled)'}")
     logger.info(f"Output Directory:    {args.output_dir}")
     logger.info(f"Top-k:               {args.k}")
 
@@ -203,9 +207,13 @@ def main():
 
     logger.info("=" * 80)
     logger.info(">>> FINAL RESULTS <<<")
-    logger.info(f"Best Descriptor: {best_desc}")
-    logger.info(f"Best Distance:   {best_dist}")
-    logger.info(f"Best mAP@5:      {best_score:.4f}")
+    if args.ground_truth:
+        logger.info(f"Best Descriptor: {best_desc}")
+        logger.info(f"Best Distance:   {best_dist}")
+        logger.info(f"Best mAP@10:     {best_score:.4f}")
+    else:
+        logger.info("Evaluation skipped (no ground truth provided)")
+        logger.info("Result pickle file generated successfully")
     logger.info(f"Results saved to: {args.output_dir}")
     logger.info("=" * 80)
 

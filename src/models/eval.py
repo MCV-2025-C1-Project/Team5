@@ -92,12 +92,15 @@ ALL_DESCRIPTORS = [
     'haar_hsv_lvl1',
     'haar_hsv_lvl2',
     'haar_hsv_lvl3',
+    'haar_hsv_lvl4',
     'bior44_grayscale_lvl1',
     'bior44_grayscale_lvl2',
     'bior44_grayscale_lvl3',
+    'bior44_grayscale_lvl4',
     'bior44_hsv_lvl1',
     'bior44_hsv_lvl2',
     'bior44_hsv_lvl3',
+    'bior44_hsv_lvl4',
     'block_haar_grayscale_4x4_lvl1',
     'block_haar_grayscale_8x8_lvl1',
     'block_haar_grayscale_4x4_lvl2',
@@ -199,6 +202,9 @@ DESCRIPTOR_NAMES = {
     'dct_lab_4x4_8coeffs': 'DCT_LAB_4x4_8Coeffs',
     'dct_lab_4x4_16coeffs': 'DCT_LAB_4x4_16Coeffs',
     'dct_lab_4x4_32coeffs': 'DCT_LAB_4x4_32Coeffs',
+    'dct_lab_8x8_8coeffs': 'DCT_LAB_8x8_8Coeffs',
+    'dct_lab_8x8_16coeffs': 'DCT_LAB_8x8_16Coeffs',
+    'dct_lab_8x8_32coeffs': 'DCT_LAB_8x8_32Coeffs',
     'lbp_gray_s1_4x4':   'LBP_Gray_S1_4x4',
     'lbp_gray_ms2_4x4':  'LBP_Gray_MS2_4x4',
     'lbp_gray_ms2_8x8':  'LBP_Gray_MS2_8x8',
@@ -266,7 +272,7 @@ DISTANCE_NAMES = {
 def evaluate_all_descriptors_and_distances(
     qsd1_dir: str, museum_dir: str,
     ground_truth_pickle: str, values_per_bin: int = 1,
-    k_values: List[int] = [1, 5],
+    k_values: List[int] = [1, 10],
     descriptors: List[str] = None,
     distance_metrics: List[str] = None,
     mode: str = "global"):
@@ -436,9 +442,9 @@ def evaluate_all_descriptors_and_distances(
                     if gt_set & top5_preds:
                         img_top5_hits += 1
 
-            # Compute mAP@1 and mAP@5 over flattened pairs
+            # Compute mAP@1 and mAP@10 over flattened pairs
             map_1 = mapk(all_actual_flat, all_predicted_flat, k=1)
-            map_5 = mapk(all_actual_flat, all_predicted_flat, k=5)
+            map_10 = mapk(all_actual_flat, all_predicted_flat, k=10)
 
             # Image-level accuracies
             top1_acc = img_top1_hits / img_valid if img_valid else 0.0
@@ -446,7 +452,7 @@ def evaluate_all_descriptors_and_distances(
 
             descriptor_results[DISTANCE_NAMES[dist_metric]] = {
                 'mAP@1': map_1,
-                'mAP@5': map_5,
+                'mAP@10': map_10,
                 'img_top1_acc': top1_acc,
                 'img_top5_acc': top5_acc,
                 'img_valid': img_valid,
@@ -455,11 +461,11 @@ def evaluate_all_descriptors_and_distances(
                 'grouped_queries': grouped_queries
             }
 
-            logger.info(f"   mAP@1: {map_1:.4f}, mAP@5: {map_5:.4f}")
+            logger.info(f"   mAP@1: {map_1:.4f}, mAP@10: {map_10:.4f}")
             logger.info("   Image-level accuracy (including GT=-1 matches):")
             logger.info(f"     Valid images: {img_valid}")
             logger.info(f"     Top-1 accuracy: {img_top1_hits}/{img_valid} = {top1_acc:.4f}")
-            logger.info(f"     Top-5 accuracy: {img_top5_hits}/{img_valid} = {top5_acc:.4f}")
+            logger.info(f"     Top-10 accuracy: {img_top5_hits}/{img_valid} = {top5_acc:.4f}")
 
         all_results[DESCRIPTOR_NAMES[descriptor]] = descriptor_results
 
