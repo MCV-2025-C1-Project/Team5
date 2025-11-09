@@ -21,7 +21,7 @@ To learn more about the experimentation process and the choice of optimal parame
 
 2. **Noise detection and removal.** Detects noisy images by measuring  intensity fluctuations, and if detected, removes the noise.
 
-3. **Background removal.** Use color to remove the background of the query images.
+3. **Background removal and multi-painting splitting.** Use color to remove the background of the query images, detects whether in the image there is one or more paintings, and if so, splits them.
 
 4. **Feature extraction for query images.** Compute the same descriptor type used for the database for each query image only on the foreground pixels.
 
@@ -46,9 +46,9 @@ To learn more about the experimentation process and the choice of optimal parame
 
 - **Background Removal:** Automatically segments the painting from its background using robust color statistics and morphological filtering. 
 
-- **Multiple Image Descriptors:** Extract diverse visual representations capturing color, texture, and spatial information.  
+- **Multi-painting Splitting:** Detects whether in the images appear more than one paintings using heuristics, and if so, it splits them to retrieve sepparately.
   
-- **Multiple Image Descriptors:** Extract diverse visual representations capturing color, texture, spatial, and keypoint-based information.  
+- **Multiple Image Descriptors:** Extract diverse visual representations capturing color, texture, spatial, and local features based on keypoints information.  
 
   **Global descriptors:**  
   Capture overall image statistics or structure, producing one descriptor per image.
@@ -74,7 +74,7 @@ To learn more about the experimentation process and the choice of optimal parame
 
   - **Keypoint detectors:**
     - DoG (Difference of Gaussians)  
-    - Harris  
+    - Harris Corner Detector
     - Harris-Laplacian  
 
   - **Feature descriptors:**
@@ -218,24 +218,24 @@ This module automatically loads the museum and query images, computes the select
 **Workflow**
 
 
-1. **Load datasets** — both query and museum images are read from their respective folders.  
+1. **Load datasets** - both query and museum images are read from their respective folders.  
    If the descriptors for the dataset have already been computed in a previous run, they are automatically **loaded from their serialized `.pkl` files** instead of being recomputed, saving time and ensuring reproducibility.  
 
-2. **Feature extraction** — descriptors are generated for each image according to the selected descriptor type and mode (`global` or `local`).  
+2. **Feature extraction** - descriptors are generated for each image according to the selected descriptor type and mode (`global` or `local`).  
    Multiple combinations of descriptors and distance metrics can be evaluated within the same run; the system automatically selects and stores the configuration that achieves the **highest mAP score**.  
 
-3. **Similarity computation** — each query descriptor is compared with all museum descriptors using the chosen distance metric.  
+3. **Similarity computation** - each query descriptor is compared with all museum descriptors using the chosen distance metric.  
 
-4. **Ranking** — the system retrieves and ranks the top-*K* most visually similar paintings for each query image.  
+4. **Ranking** - the system retrieves and ranks the top-*K* most visually similar paintings for each query image.  
 
-5. **Evaluation** — performance is measured using **mAP@K** and **Top-K accuracy** metrics, allowing comparison between different descriptor–distance configurations.  
+5. **Evaluation** - performance is measured using **mAP@K** and **Top-K accuracy** metrics, allowing comparison between different descriptor-distance configurations.  
 
-6. **Result saving and visualization** —  
+6. **Result saving and visualization** -  
    For the best-performing configuration, the system automatically:
    - **Generates and saves** a `.pkl` file containing the ranked retrieval results (one list of retrieved image indices per query).  
    - **Creates visualizations** that include:
      - Global **heatmaps** summarizing descriptor and distance performance.  
-     - **Query–retrieval samples** showing the most similar results for representative queries.  
+     - **Query-retrieval samples** showing the most similar results for representative queries.  
      - **Local matches visualization** (for `mode local`) highlighting detected keypoints and their correspondences between the query and retrieved images.   
 
 **Feature extraction modes**
@@ -338,7 +338,7 @@ To evaluate how color representation and spatial structure influence retrieval p
 The best overall performance was achieved with the Spatial Pyramid Histogram (1D, HSV) using Level 4 and 32 bins, reaching
 mAP@1 = 0.833 and mAP@5 = 0.883.
 
-In contrast, 2D histograms (H-S) performed significantly worse — the best result (~0.50 mAP@5 with 16×16 bins) was even lower than our Week 1 baseline (mAP@1 = 0.667, mAP@5 = 0.707).
+In contrast, 2D histograms (H-S) performed significantly worse - the best result (~0.50 mAP@5 with 16×16 bins) was even lower than our Week 1 baseline (mAP@1 = 0.667, mAP@5 = 0.707).
 This suggests that removing the Value (V) channel discarded important brightness information that helps distinguish similar colors.
 
 For 3D histograms, results did not surpass the 1D spatial pyramid either, although the 3D pyramid (Level 3) reached a moderate mAP@5 = 0.72.
@@ -365,16 +365,10 @@ In this task, we addressed the problem of detecting and removing noise from a da
 
 After detection, we applied three denoising techniques: Gaussian, median, and wavelet-based filters. Their hyperparameters were optimized through grid search using PSNR and SSIM as evaluation metrics. Results showed that applying denoising selectively on noisy images improved overall quality, with the median filter providing the best trade-off between noise reduction and edge preservation.
 
-To run the segmentation for multiple paintings per image run:
-
-```bash
-python -m src.models.seg --image_folder /path/to/images --output_folder /path/to.outputs --multi_painting
-```
-
 
 #### Texture descriptors
 
-We implemented and evaluated three texture descriptors — DCT, LBP, and DWT — to capture structural and textural information from paintings. Each method was tested under different conditions, varying color space (Grayscale, LAB, HSV), spatial detail (4×4 vs 8×8 grids), and descriptor complexity (number of coefficients, scales, or decomposition levels). All experiments were conducted on both the original and denoised datasets to assess robustness to noise. 
+We implemented and evaluated three texture descriptors - DCT, LBP, and DWT - to capture structural and textural information from paintings. Each method was tested under different conditions, varying color space (Grayscale, LAB, HSV), spatial detail (4×4 vs 8×8 grids), and descriptor complexity (number of coefficients, scales, or decomposition levels). All experiments were conducted on both the original and denoised datasets to assess robustness to noise. 
 
 The DCT descriptor captured low-frequency patterns within image blocks through a zigzag scan of DCT coefficients. It achieved the best results with DCT_LAB_4×4_16Coeffs + Canberra distance, reaching mAP@1 = 1.00 on both noisy and denoised images, showing excellent discriminative power and stability, especially in LAB and Grayscale spaces. 
 
@@ -383,6 +377,21 @@ The LBP descriptor encoded local micro-patterns using binary comparisons of neig
 Finally, the DWT descriptor combined spatial and frequency analysis through multi-scale wavelet decomposition. The block-based version preserved spatial information and clearly outperformed the global one. Its best configuration, Block_Haar_Grayscale_8×8_LVL1 + Euclidean distance, achieved mAP@1 = 1.00 even after denoising, confirming strong robustness to both noise and color variations. 
 
 Overall, DCT and DWT reached perfect accuracy, while DWT proved the most stable under all conditions, and LBP, although effective, remained more sensitive to smoothing and noise.
+ 
+
+### Week 4
+
+#### Local keypoint detectors and descriptors
+
+In this stage, we focused on implementing local feature-based methods to characterize and compare images through distinctive keypoints and their associated descriptors. Unlike global or texture-based representations, local descriptors enable fine-grained matching between images even under variations in scale, rotation, and illumination.
+
+We began by developing three **keypoint detectors** to identify salient and repeatable points of interest: Harris Corner Detector, which locates corners by analyzing intensity gradients within local neighborhoods. Harris-Laplacian Detector, which extends the Harris approach by incorporating a Laplacian-of-Gaussian scale selection, ensuring better scale invariance. Difference of Gaussians (DoG), used in SIFT, which efficiently approximates the Laplacian-of-Gaussian to detect keypoints across multiple scales.
+
+Once the keypoints were obtained, we implemented three **local descriptors** to encode the visual appearance around them: SIFT (Scale-Invariant Feature Transform), which computes gradient orientation histograms in local patches to achieve strong invariance to scale, rotation, and moderate illumination changes. HOG (Histogram of Oriented Gradients), which captures edge distributions within fixed grids, providing robust shape and contour information. DAISY, a dense descriptor inspired by SIFT, which samples gradient orientations in concentric rings, offering efficient and smooth representations well-suited for dense matching.
+
+To compare images, we developed a descriptor matching algorithm based on xxxx. This allowed us to evaluate the retrieval performance of different detector-descriptor combinations. The evaluation showed that the best overall performance was achieved using SIFT descriptors extracted from DoG keypoints, which provided the highest retrieval accuracy and most stable results across image variations. HOG and DAISY also performed competitively but were more sensitive to geometric and illumination changes.
+<!TODO add best metrics> 
+
 
 ## Team members:
 
