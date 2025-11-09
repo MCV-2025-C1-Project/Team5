@@ -275,9 +275,7 @@ class ComputeImageFeatures:
         if self.mode == 'global':
             descriptor_func = GLOBAL_DESCRIPTOR_FUNCTIONS[self.descriptor_name]
             distance_func = DISTANCE_FUNCTIONS_GLOBAL[self.distance_metric]
-            results = self._retrieve_global(query_path, k, descriptor_func, distance_func)
-            # global branch does not run unknown detection heuristics (hist distance only)
-            return results, []
+            return self._retrieve_global(query_path, k, descriptor_func, distance_func)
         else:
             descriptor_func = LOCAL_DESCRIPTORS_FUNCTIONS[self.descriptor_name]
             distance_func = DISTANCE_FUNCTIONS_LOCAL[self.distance_metric]
