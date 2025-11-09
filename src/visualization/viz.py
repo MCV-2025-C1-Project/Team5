@@ -124,7 +124,11 @@ DESC_NAME_TO_FUNC = {
     'SIFT_HARRIS': 'sift_harris',
     'SIFT_HARRIS_LAPLACIAN_DEFAULT': 'sift_harris_laplacian_default',
     'HOG_DOG_DEFAULT': 'hog_dog_default',
-    'DAISY_DOG_DEFAULT': 'daisy_dog_default'
+    'HOG_HARRIS_DEFAULT': 'hog_harris_default',
+    'HOG_HARRIS_LAPLACIAN_DEFAULT': 'hog_harris_laplacian_default',
+    'DAISY_DOG_DEFAULT': 'daisy_dog_default',
+    'DAISY_HARRIS_DEFAULT': 'daisy_harris_default',
+    'DAISY_HARRIS_LAPLACIAN_DEFAULT': 'daisy_harris_laplacian_default',
 }
 
 DIST_NAME_TO_FUNC = {

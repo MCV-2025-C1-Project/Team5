@@ -104,13 +104,39 @@ LOCAL_DESCRIPTORS_FUNCTIONS = {
         nfeatures=250,
         **kwargs
     ),
+    'hog_harris_default': lambda img_path, **kwargs: hog.compute_hog_descriptor(
+        img_path,
+        keypoint_detector=KEYPOINT_DETECTORS['harris_default'],
+        nfeatures=250,
+        **kwargs
+    ),
+    'hog_harris_laplacian_default': lambda img_path, **kwargs: hog.compute_hog_descriptor(
+        img_path,
+        keypoint_detector=KEYPOINT_DETECTORS['harris_laplacian_default'],
+        nfeatures=250,
+        **kwargs
+    ),
     'daisy_dog_default': lambda img_path, **kwargs: daisy.compute_daisy_descriptor(
         img_path,
         keypoint_detector=KEYPOINT_DETECTORS['dog_default'],
         top_n=250,
-        adjust_to_size=False,
-        normalization='l2',
-        orientations=8,
+        adjust_to_size=True,
+        visualize=False,
+        **kwargs
+    ),
+    'daisy_harris_default': lambda img_path, **kwargs: daisy.compute_daisy_descriptor(
+        img_path,
+        keypoint_detector=KEYPOINT_DETECTORS['harris_default'],
+        top_n=250,
+        adjust_to_size=True,
+        visualize=False,
+        **kwargs
+    ),
+    'daisy_harris_laplacian_default': lambda img_path, **kwargs: daisy.compute_daisy_descriptor(
+        img_path,
+        keypoint_detector=KEYPOINT_DETECTORS['harris_laplacian_default'],
+        top_n=250,
+        adjust_to_size=True,
         visualize=False,
         **kwargs
     ),

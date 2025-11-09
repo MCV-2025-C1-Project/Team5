@@ -129,7 +129,11 @@ ALL_DESCRIPTORS = [
     'sift_harris_default',
     'sift_harris_laplacian_default',
     'hog_dog_default',
-    'daisy_dog_default'
+    'hog_harris_default',
+    'hog_harris_laplacian_default'
+    'daisy_dog_default',
+    'daisy_harris_default',
+    'daisy_harris_laplacian_default'
 ]
 
 ALL_DISTANCE_METRICS = [
@@ -252,7 +256,11 @@ DESCRIPTOR_NAMES = {
     'sift_harris_default': 'SIFT_HARRIS_DEFAULT',
     'sift_harris_laplacian_default': 'SIFT_HARRIS_LAPLACIAN_DEFAULT',
     'hog_dog_default': 'HOG_DOG_DEFAULT',
-    'daisy_dog_default': 'DAISY_DOG_DEFAULT'
+    'hog_harris_default': 'HOG_HARRIS_DEFAULT',
+    'hog_harris_laplacian_default': 'HOG_HARRIS_LAPLACIAN_DEFAULT',
+    'daisy_dog_default': 'DAISY_DOG_DEFAULT',
+    'daisy_harris_default': 'DAISY_HARRIS_DEFAULT',
+    'daisy_harris_laplacian_default': 'DAISY_HARRIS_LAPLACIAN_DEFAULT'
 }
 
 DISTANCE_NAMES = {

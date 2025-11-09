@@ -106,7 +106,9 @@ def main():
                  'block_bior44_grayscale_8x8_lvl2', 'block_bior44_grayscale_4x4_lvl3', 'block_bior44_grayscale_8x8_lvl3',
                  'block_bior44_hsv_4x4_lvl1', 'block_bior44_hsv_8x8_lvl1', 'block_bior44_hsv_4x4_lvl2', 
                  'block_bior44_hsv_8x8_lvl2', 'block_bior44_hsv_4x4_lvl3', 'block_bior44_hsv_8x8_lvl3',
-                 'sift_dog_default', 'sift_harris_default', 'sift_harris_laplacian_default', 'hog_dog_default', 'daisy_dog_default'
+                 'sift_dog_default', 'sift_harris_default', 'sift_harris_laplacian_default', 
+                 'hog_dog_default', 'hog_harris_default', 'hog_harris_laplacian_default', 
+                 'daisy_dog_default', 'daisy_harris_default', 'daisy_harris_laplacian_default'
                  ],
         help='Specific descriptors to evaluate (default: all). Multiple allowed.'
     )
