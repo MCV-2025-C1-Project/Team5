@@ -27,30 +27,9 @@ from src.visualization.viz import (
 from src.descriptors.grayscale import convert_img_to_gray_scale
 from src.descriptors.lab import convert_img_to_lab
 from src.descriptors.hsv import convert_img_to_hsv
+from src.data.detect_noise import noise_detector_laplace
+from src.data.remove_noise import apply_median_filter
 
-
-def apply_gaussian_filter(image: np.ndarray, sigma: float = 1.0, radius: int = 2) -> np.ndarray:
-    """
-    Apply Gaussian filter to denoise image.
-
-    Args:
-        image (np.ndarray): Input image (H, W, C).
-        sigma (float): Standard deviation for Gaussian kernel.
-        radius (int): Radius of Gaussian kernel (truncate parameter).
-
-    Returns:
-        np.ndarray: Filtered image.
-    """
-    # Apply Gaussian filter to each channel
-    filtered = np.zeros_like(image, dtype=np.float32)
-    for c in range(image.shape[2]):
-        filtered[:, :, c] = gaussian_filter(
-            image[:, :, c].astype(np.float32),
-            sigma=sigma,
-            truncate=radius
-        )
-
-    return filtered.astype(image.dtype)
 
 
 def _estimate_bg_from_borders(image_lab: np.ndarray, border: int = 20) -> Dict[str, np.ndarray]:
@@ -773,18 +752,24 @@ def segment_multiple_paintings(image: np.ndarray,
                                 debug: bool = False):
     """
     Segment multiple paintings in an image using smart gap detection.
-    
+
     Returns list of masks - one for single painting, multiple for multiple paintings.
     """
     H, W = image.shape[:2]
-    
+
+    # Step 0: Detect and remove noise if present
+    is_noisy = noise_detector_laplace(image)
+    if is_noisy:
+        image = apply_median_filter(image)
+
     # Step 1: Initial segmentation using segment_background
     initial_mask = segment_background(
         image, border=border, dist_percentile=dist_percentile,
         dist_margin=dist_margin, wL=wL, wA=wA, wB=wB,
         sat_min=sat_min, hue_percentile=hue_percentile,
         hue_margin_deg=hue_margin_deg,
-        min_area=min_area, opening_size=opening_size, closing_size=closing_size
+        min_area=min_area, opening_size=opening_size, closing_size=closing_size,
+        apply_noise_removal=False  # Already applied noise removal above
     )
     
     # Step 2: Detect multiple paintings with smart gap quality analysis
@@ -818,15 +803,17 @@ def segment_multiple_paintings(image: np.ndarray,
             dist_margin=dist_margin, wL=wL, wA=wA, wB=wB,
             sat_min=sat_min, hue_percentile=hue_percentile,
             hue_margin_deg=hue_margin_deg,
-            min_area=min_area // 2, opening_size=opening_size, closing_size=closing_size
+            min_area=min_area // 2, opening_size=opening_size, closing_size=closing_size,
+            apply_noise_removal=False  # Already applied noise removal at the top
         )
-        
+
         right_mask = segment_background(
             right_image, border=border, dist_percentile=dist_percentile,
             dist_margin=dist_margin, wL=wL, wA=wA, wB=wB,
             sat_min=sat_min, hue_percentile=hue_percentile,
             hue_margin_deg=hue_margin_deg,
-            min_area=min_area // 2, opening_size=opening_size, closing_size=closing_size
+            min_area=min_area // 2, opening_size=opening_size, closing_size=closing_size,
+            apply_noise_removal=False  # Already applied noise removal at the top
         )
         
         # Check minimum area requirement (3% of total image)
@@ -874,15 +861,17 @@ def segment_multiple_paintings(image: np.ndarray,
             dist_margin=dist_margin, wL=wL, wA=wA, wB=wB,
             sat_min=sat_min, hue_percentile=hue_percentile,
             hue_margin_deg=hue_margin_deg,
-            min_area=min_area // 2, opening_size=opening_size, closing_size=closing_size
+            min_area=min_area // 2, opening_size=opening_size, closing_size=closing_size,
+            apply_noise_removal=False  # Already applied noise removal at the top
         )
-        
+
         bottom_mask = segment_background(
             bottom_image, border=border, dist_percentile=dist_percentile,
             dist_margin=dist_margin, wL=wL, wA=wA, wB=wB,
             sat_min=sat_min, hue_percentile=hue_percentile,
             hue_margin_deg=hue_margin_deg,
-            min_area=min_area // 2, opening_size=opening_size, closing_size=closing_size
+            min_area=min_area // 2, opening_size=opening_size, closing_size=closing_size,
+            apply_noise_removal=False  # Already applied noise removal at the top
         )
         
         # Check minimum area requirement (1% of total image for horizontal)
@@ -931,9 +920,9 @@ def segment_background(image: np.ndarray,
                                 sat_min: float = 30.0,
                                 hue_percentile: float = 92.0,
                                 hue_margin_deg: float = 6.0,
-                                apply_gaussian: bool = False,
                                 sigma: float = 1.0,
-                                radius: int = 2) -> np.ndarray:
+                                radius: int = 2,
+                                apply_noise_removal: bool = True) -> np.ndarray:
     """
     Segment foreground from background using LAB and HSV color-based methods.
 
@@ -951,16 +940,18 @@ def segment_background(image: np.ndarray,
         sat_min (float): Minimum saturation threshold for hue-based segmentation.
         hue_percentile (float): Percentile for hue distance threshold.
         hue_margin_deg (float): Margin in degrees added to hue distance threshold.
-        apply_gaussian (bool): Whether to apply Gaussian filtering for denoising.
         sigma (float): Standard deviation for Gaussian kernel.
         radius (int): Radius of Gaussian kernel (truncate parameter).
+        apply_noise_removal (bool): Whether to detect and remove noise. Defaults to True.
 
     Returns:
         np.ndarray: Binary mask where foreground is 1 and background is 0.
     """
-    # Apply Gaussian filter for denoising if requested
-    if apply_gaussian:
-        image = apply_gaussian_filter(image, sigma=sigma, radius=radius)
+    # Detect and remove noise if present
+    if apply_noise_removal:
+        is_noisy = noise_detector_laplace(image)
+        if is_noisy:
+            image = apply_median_filter(image)
 
     lab = convert_img_to_lab(image).astype(np.float32)
     hsv = convert_img_to_hsv(image).astype(np.float32)
