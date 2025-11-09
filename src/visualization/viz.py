@@ -2,6 +2,7 @@ from pathlib import Path
 import pickle
 from typing import Dict, List
 import os
+import itertools
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9,7 +10,7 @@ from PIL import Image
 from sklearn.metrics import confusion_matrix
 import seaborn as sns
 
-from src.models.eval import evaluate_all_descriptors_and_distances
+from src.models.eval import evaluate_all_descriptors_and_distances, if_swapped
 from src.models.main import ComputeImageFeatures
 from src.visualization.plots import draw_matches
 from src.data.extract import read_image
@@ -139,6 +140,56 @@ DIST_NAME_TO_FUNC = {
     'Jeffrey Div.': 'jensen_shannon.jeffrey_divergence',
     'Correlation': 'correlation.correlation_distance'
 }
+
+
+def image_level_topk(gt_labels, result_list_reordered, k=5):
+    """
+    Image-level Top-1 / Top-k accuracy:
+      • If GT == [-1], count as correct iff any sub-painting predicts -1 within Top-1/Top-k.
+      • Else, treat GT as a set and compare against union of preds across sub-paintings.
+
+    Args:
+        gt_labels: list of GTs per image (each item: int or list[int]).
+        result_list_reordered: list of per-image predictions, each is
+            a list of per-subpainting lists of ranked IDs.
+        k: top-k cutoff.
+
+    Returns:
+        (num_images, top1_hits, top1_acc, topk_hits, topk_acc)
+    """
+    valid = 0
+    top1_hits = 0
+    topk_hits = 0
+
+    for gt, preds_per_sub in zip(gt_labels, result_list_reordered):
+        gt_list = gt if isinstance(gt, list) else [gt]
+        valid += 1
+
+        if gt_list == [-1]:
+            # Top-1: any sub-painting's first pred is -1
+            t1 = any((p and p[0] == -1) for p in preds_per_sub)
+            # Top-k: any sub-painting's top-k contains -1
+            tk = any((-1 in (p[:k] if p else [])) for p in preds_per_sub)
+            if t1: top1_hits += 1
+            if tk: topk_hits += 1
+        else:
+            gt_set = set(gt_list)
+            # Union of first predictions across sub-paintings
+            firsts = {p[0] for p in preds_per_sub if p}
+            # Union of top-k predictions across sub-paintings
+            topk_union = set()
+            for p in preds_per_sub:
+                if p:
+                    topk_union.update(p[:k])
+            if gt_set & firsts:
+                top1_hits += 1
+            if gt_set & topk_union:
+                topk_hits += 1
+
+    top1_acc = top1_hits / valid if valid else 0.0
+    topk_acc = topk_hits / valid if valid else 0.0
+    return valid, top1_hits, top1_acc, topk_hits, topk_acc
+
 
 
 def plot_top_k_results(query_image_path, retrieved_results,
@@ -328,6 +379,10 @@ def generate_comprehensive_analysis(
     qsd_path = Path(qsd_dir)
     query_images = sorted(qsd_path.glob('*.jpg'))
 
+    logger.info("=" * 80)
+    logger.info("SAMPLE VISUALIZATIONS")
+    logger.info("=" * 80)
+
     # Select sample queries
     sample_indices = np.random.choice(len(query_images),
                                       min(10, len(query_images)),
@@ -335,6 +390,8 @@ def generate_comprehensive_analysis(
 
     for i, idx in enumerate(sample_indices):
         query_path = query_images[idx]
+        match_save_path = None  # <<<< FIX: Initialize here
+        
         if mode == 'local':
             results, match_data = best_system.retrieve(str(query_path), k=k)
             retrieved = results
@@ -348,71 +405,184 @@ def generate_comprehensive_analysis(
         if mode == 'local' and len(retrieved) > 0 and len(match_data) > 0:
             top1 = retrieved[0]  # (museum_id, num_tentative, num_inliers)
             top1_id = top1[0]
-            top1_matchinfo = match_data[0]  # {"good_matches": [...], "inlier_matches": [...]}
+            
+            # <<<< FIX: Skip match visualization if unknown (-1)
+            if top1_id == -1:
+                logger.info(f"Query {idx} detected as unknown - skipping match visualization")
+            else:
+                top1_matchinfo = match_data[0]  # {"good_matches": [...], "inlier_matches": [...]}
 
-            img_q = read_image(query_path)
-            museum_img_path = Path(museum_dir) / f"bbdd_{top1_id:05d}.jpg"
-            img_m = read_image(museum_img_path)
+                img_q = read_image(query_path)
+                museum_img_path = Path(museum_dir) / f"bbdd_{top1_id:05d}.jpg"
+                img_m = read_image(museum_img_path)
 
-            if best_system.query_keypoints is not None and len(best_system.query_keypoints) > 0:
-                kps_q = best_system.query_keypoints
-                kps_m = best_system.museum_features[top1_id]["keypoints"]
+                if best_system.query_keypoints is not None and len(best_system.query_keypoints) > 0:
+                    kps_q = best_system.query_keypoints
+                    kps_m = best_system.museum_features[top1_id]["keypoints"]
 
-                matches_to_draw = (
-                    top1_matchinfo["inlier_matches"]
-                    if len(top1_matchinfo["inlier_matches"]) > 0
-                    else top1_matchinfo["good_matches"]
-                )
+                    matches_to_draw = (
+                        top1_matchinfo["inlier_matches"]
+                        if len(top1_matchinfo["inlier_matches"]) > 0
+                        else top1_matchinfo["good_matches"]
+                    )
 
-                logger.info(f"Drawing {len(matches_to_draw)} matches "f"(inliers={len(top1_matchinfo['inlier_matches'])}, good={len(top1_matchinfo['good_matches'])})")
+                    logger.info(f"Drawing {len(matches_to_draw)} matches "
+                               f"(inliers={len(top1_matchinfo['inlier_matches'])}, "
+                               f"good={len(top1_matchinfo['good_matches'])})")
 
-                match_save_path = f"{output_dir}/matches_query_{idx:05d}_to_{top1_id:05d}.jpg"
-                draw_matches(
-                    img1=img_q,
-                    kps1=kps_q,
-                    img2=img_m,
-                    kps2=kps_m,
-                    matches=matches_to_draw,
-                    title=f"Query {idx} ↔ BBDD {top1_id} | Inliers: {len(matches_to_draw)}",
-                    resize=False,
-                    save_path=match_save_path,
-                    show=False  
-                )
+                    match_save_path = f"{output_dir}/matches_query_{idx:05d}_to_{top1_id:05d}.jpg"
+                    draw_matches(
+                        img1=img_q,
+                        kps1=kps_q,
+                        img2=img_m,
+                        kps2=kps_m,
+                        matches=matches_to_draw,
+                        title=f"Query {idx} ↔ BBDD {top1_id} | Inliers: {len(matches_to_draw)}",
+                        resize=False,
+                        save_path=match_save_path,
+                        show=False  
+                    )
 
-        logger.info(f"Saved match visualization: {match_save_path}")
+        # <<<< FIX: Only log if match_save_path was actually set
+        if match_save_path:
+            logger.info(f"Saved match visualization: {match_save_path}")
 
+        # Print ground truth info - extract parent ID from filename
+        filename = query_path.stem  # e.g., "00002_0" or "00000"
+        if '_' in filename:
+            # Multi-painting image: extract parent ID
+            parent_id = int(filename.rsplit('_', 1)[0])
+            sub_idx = int(filename.rsplit('_', 1)[1])
+        else:
+            # Single painting image
+            parent_id = int(filename)
+            sub_idx = None
 
-        # Print ground truth info
-        if idx < len(ground_truth):
-            gt = ground_truth[idx]
-            gt_id = gt[0] if isinstance(gt, list) else gt
+        if parent_id < len(ground_truth):
+            gt = ground_truth[parent_id]
+            gt_list = gt if isinstance(gt, list) else [gt]
             retrieved_ids = [r[0] for r in retrieved]
-            top1_correct = (retrieved_ids[0] == gt_id)
 
-            logger.info(f"Query {idx}: GT={gt_id}, "
-                    f"Retrieved={retrieved_ids}, "
-                    f"Top-1 Correct={top1_correct}")
+            # Determine the specific GT for this painting
+            if sub_idx is not None and sub_idx < len(gt_list):
+                # Multi-painting: get GT for this specific sub-painting
+                specific_gt = gt_list[sub_idx]
+            elif len(gt_list) > 0:
+                # Single painting: use the first (and only) GT
+                specific_gt = gt_list[0]
+            else:
+                specific_gt = -1
+
+            # Determine correctness
+            if len(retrieved_ids) > 0:
+                top1_retrieved = retrieved_ids[0]
+
+                # Handle unknown cases: both GT and retrieved are -1 = correct (or N/A)
+                if specific_gt == -1 and top1_retrieved == -1:
+                    top1_correct = True  # Both are unknown - this is correct
+                elif specific_gt == -1 or top1_retrieved == -1:
+                    top1_correct = False  # Only one is unknown - mismatch
+                else:
+                    top1_correct = (top1_retrieved == specific_gt)
+            else:
+                top1_correct = None  # No retrieval results
+
+            # For multi-painting images, show which painting this is
+            if sub_idx is not None:
+                logger.info(f"Query {idx} (sub-painting {sub_idx}): GT={specific_gt}, "
+                        f"Retrieved={retrieved_ids}, "
+                        f"Top-1 Correct={top1_correct}")
+            else:
+                # Single painting
+                logger.info(f"Query {idx}: GT={specific_gt}, "
+                        f"Retrieved={retrieved_ids}, "
+                        f"Top-1 Correct={top1_correct}")
 
     # Generate results for all queries and save as pickle
-    logger.info("Generating results for all queries...")
+    logger.info("=" * 80)
+    logger.info("GENERATING FINAL RESULTS FOR ALL QUERIES")
+    logger.info("=" * 80)
+
+    # Group query images by base ID (handle multi-painting images)
+    from collections import defaultdict
+    image_groups = defaultdict(lambda: {'base': None, 'sub_paintings': []})
+
+    for query_path in query_images:
+        filename = query_path.stem  # e.g., "00002_0" or "00000"
+        if '_' in filename:
+            # Split to get base ID and sub-painting index
+            parts = filename.rsplit('_', 1)
+            base_id = parts[0]
+            try:
+                sub_idx = int(parts[1])
+                image_groups[base_id]['sub_paintings'].append((sub_idx, query_path))
+            except ValueError:
+                # Not a valid sub-index, treat as base image
+                image_groups[filename]['base'] = query_path
+        else:
+            # No underscore, this is a base/single painting image
+            image_groups[filename]['base'] = query_path
+
+    # Process each image group
     predictions = []
     gt_labels = []
     result_list = []  # List of lists for pickle output
+    result_list_reordered = []  # Reordered results 
 
-    for query_idx, query_path in enumerate(query_images):
-        if query_idx < len(ground_truth):
+    for base_id in sorted(image_groups.keys()):
+        group_data = image_groups[base_id]
+
+        # Determine which files to process
+        if len(group_data['sub_paintings']) > 0:
+            # Has sub-paintings, use ONLY those (ignore base image)
+            paintings_to_process = sorted(group_data['sub_paintings'], key=lambda x: x[0])
+        elif group_data['base'] is not None:
+            # Single painting, use the base image
+            paintings_to_process = [(0, group_data['base'])]
+        else:
+            # Skip if no valid files
+            continue
+
+        # Retrieve results for each painting
+        image_results = []
+        for sub_idx, query_path in paintings_to_process:
             if mode == 'local':
                 results, match_data = best_system.retrieve(str(query_path), k=k)
                 retrieved = results
             else:
                 retrieved = best_system.retrieve(str(query_path), k=k)
-            top_k_ids = [r[0] for r in retrieved]
-            result_list.append(top_k_ids)
-            predictions.append(retrieved[0][0])  # Top-1 prediction
 
-            gt = ground_truth[query_idx]
-            gt_id = gt[0] if isinstance(gt, list) else gt
-            gt_labels.append(gt_id)
+            top_k_ids = [r[0] for r in retrieved]
+            image_results.append(top_k_ids)
+
+        # Handle ground truth
+        image_idx = int(base_id)
+        if image_idx < len(ground_truth):
+            gt = ground_truth[image_idx]
+            gt_list = gt if isinstance(gt, list) else [gt]
+
+            # Find best for multi-painting images
+            _, best_results, best_score = if_swapped(
+                image_results, gt_list, k=k
+            )
+
+            # Log matching results for multi-painting queries
+            if len(gt_list) > 1 and gt_list != [-1] and -1 not in gt_list:
+                logger.debug(f"Image {image_idx}: Applied matching for {len(gt_list)} paintings")
+                logger.debug(f"  GT: {gt_list}")
+                logger.debug(f"  Original order top-1s: {[r[0] if r else -1 for r in image_results]}")
+                logger.debug(f"  Best top-1s: {[r[0] if r else -1 for r in best_results]}")
+                if best_score is not None:
+                    logger.debug(f"  Best score: {best_score:.4f}")
+
+            # Store original results (in file order)
+            result_list.append(image_results)
+
+            # Store reordered results (best - if image order is swapped)
+            result_list_reordered.append(best_results)
+
+            # Store GT
+            gt_labels.append(gt)
 
     # Save result_list as pickle
     result_pickle_path = f'{output_dir}/result.pkl'
@@ -420,16 +590,27 @@ def generate_comprehensive_analysis(
         pickle.dump(result_list, f)
     logger.info(f"Saved top-{k} results to: {result_pickle_path}")
 
-    # Create and save confusion matrices
+    # --------------------------------------------------------------------
+    # Create and save confusion matrices (painting-level; include -1)
+    # --------------------------------------------------------------------
     logger.info("Creating confusion matrices...")
 
-    # Get unique labels for confusion matrix
-    unique_labels = sorted(list(set(gt_labels + predictions)))
+    flat_gt = []
+    flat_pred_top1 = []
 
-    # Confusion matrix for top-1 predictions
-    cm = confusion_matrix(gt_labels, predictions, labels=unique_labels)
+    for gt, results in zip(gt_labels, result_list_reordered):
+        gt_list = gt if isinstance(gt, list) else [gt]
+        for i, gt_val in enumerate(gt_list):
+            # prediction list for this sub-painting (if missing, treat as empty)
+            painting_results = results[i] if i < len(results) else []
+            top1_pred = painting_results[0] if painting_results else -1
 
-    # Plot confusion matrix
+            flat_gt.append(gt_val)
+            flat_pred_top1.append(top1_pred)
+
+    unique_labels = sorted(list(set(flat_gt + flat_pred_top1)))
+    cm = confusion_matrix(flat_gt, flat_pred_top1, labels=unique_labels)
+
     plt.figure(figsize=(12, 10))
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
                 xticklabels=unique_labels, yticklabels=unique_labels)
@@ -440,26 +621,31 @@ def generate_comprehensive_analysis(
     plt.tight_layout()
     plt.savefig(f'{output_dir}/confusion_matrix_top1.png',
                 dpi=300, bbox_inches='tight')
-    plt.show()
     plt.close()
 
-    # Top-5 accuracy confusion matrix (binary: correct if GT in top-5)
-    top_k_correct = []
-    for idx, (gt, result) in enumerate(zip(gt_labels, result_list)):
-        top_k_correct.append(1 if gt in result else 0)
-
-    # Create a simple accuracy matrix
+    # --------------------------------------------------------------------
+    # Image-level Top-k accuracy
+    # --------------------------------------------------------------------
     logger.info("Creating accuracy matrix...")
+
+    num_images, t1_hits, t1_acc, tk_hits, tk_acc = image_level_topk(
+        gt_labels, result_list_reordered, k=k
+    )
+
+    logger.info("Image-level accuracy (including GT=-1 matches):")
+    logger.info(f"  Valid images: {num_images}")
+    logger.info(f"  Top-1 accuracy: {t1_hits}/{num_images} = {t1_acc:.4f} ({t1_acc*100:.2f}%)")
+    logger.info(f"  Top-{k} accuracy: {tk_hits}/{num_images} = {tk_acc:.4f} ({tk_acc*100:.2f}%)")
+
     plt.figure(figsize=(10, 8))
-    accuracy_data = np.array(
-        [[sum(top_k_correct), len(top_k_correct) - sum(top_k_correct)]])
+    accuracy_data = np.array([[tk_hits, num_images - tk_hits]])
     sns.heatmap(accuracy_data, annot=True, fmt='d', cmap='Greens',
-                xticklabels=['Incorrect', 'Correct'], yticklabels=[f'Top-{k} Accuracy'])
-    plt.title(f'Top-{k} Accuracy Matrix\n{best_desc_map5} + {best_dist_map5}')
+                xticklabels=['Correct', 'Incorrect'], yticklabels=[f'Top-{k} Accuracy (Image-level)'])
+    plt.title(f'Top-{k} Image-Level Accuracy (incl. unknowns)\n{best_desc_map5} + {best_dist_map5}\n'
+              f'{tk_hits}/{num_images} = {tk_acc*100:.1f}%')
     plt.tight_layout()
     plt.savefig(f'{output_dir}/confusion_matrix_top{k}.png',
                 dpi=300, bbox_inches='tight')
-    plt.show()
     plt.close()
 
     # Save summary statistics
@@ -468,8 +654,11 @@ def generate_comprehensive_analysis(
         'best_distance': best_dist_map5,
         'best_mAP@1': best_overall_map1,
         'best_mAP@5': best_overall_map5,
-        'top_1_accuracy': sum([1 for gt, pred in zip(gt_labels, predictions) if gt == pred]) / len(gt_labels),
-        f'top_{k}_accuracy': sum(top_k_correct) / len(top_k_correct),
+        'top_1_accuracy_image_level': t1_acc,
+        f'top_{k}_accuracy_image_level': tk_acc,
+        'num_valid_images': num_images,
+        'top_1_correct_images': t1_hits,
+        f'top_{k}_correct_images': tk_hits,
         'values_per_bin': values_per_bin,
         'k': k
     }

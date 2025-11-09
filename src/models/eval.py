@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import List
 import pickle
 from tqdm import tqdm
+import itertools
 from src.distances import (bhattacharyya,
                            canberra,
                            chi_2,
@@ -92,15 +93,12 @@ ALL_DESCRIPTORS = [
     'haar_hsv_lvl1',
     'haar_hsv_lvl2',
     'haar_hsv_lvl3',
-    'haar_hsv_lvl4',
     'bior44_grayscale_lvl1',
     'bior44_grayscale_lvl2',
     'bior44_grayscale_lvl3',
-    'bior44_grayscale_lvl4',
     'bior44_hsv_lvl1',
     'bior44_hsv_lvl2',
     'bior44_hsv_lvl3',
-    'bior44_hsv_lvl4',
     'block_haar_grayscale_4x4_lvl1',
     'block_haar_grayscale_8x8_lvl1',
     'block_haar_grayscale_4x4_lvl2',
@@ -202,9 +200,6 @@ DESCRIPTOR_NAMES = {
     'dct_lab_4x4_8coeffs': 'DCT_LAB_4x4_8Coeffs',
     'dct_lab_4x4_16coeffs': 'DCT_LAB_4x4_16Coeffs',
     'dct_lab_4x4_32coeffs': 'DCT_LAB_4x4_32Coeffs',
-    'dct_lab_8x8_8coeffs': 'DCT_LAB_8x8_8Coeffs',
-    'dct_lab_8x8_16coeffs': 'DCT_LAB_8x8_16Coeffs',
-    'dct_lab_8x8_32coeffs': 'DCT_LAB_8x8_32Coeffs',
     'lbp_gray_s1_4x4':   'LBP_Gray_S1_4x4',
     'lbp_gray_ms2_4x4':  'LBP_Gray_MS2_4x4',
     'lbp_gray_ms2_8x8':  'LBP_Gray_MS2_8x8',
@@ -252,7 +247,7 @@ DESCRIPTOR_NAMES = {
     'sift_harris_default': 'SIFT_HARRIS_DEFAULT',
     'sift_harris_laplacian_default': 'SIFT_HARRIS_LAPLACIAN_DEFAULT',
     'hog_dog_default': 'HOG_DOG_DEFAULT',
-    'daisy_dog_default': 'DAISY_DOG_DEFAULT' 
+    'daisy_dog_default': 'DAISY_DOG_DEFAULT'
 }
 
 DISTANCE_NAMES = {
@@ -269,6 +264,46 @@ DISTANCE_NAMES = {
 }
 
 
+def if_swapped(predictions_list, gt_list, k=5):
+    """
+    Find the best matching between predictions and ground truth even if any edge case the painting list order is swapped.
+
+    For multi-painting images, the order of segmented paintings might not match
+    the ground truth order. This function returns the retreival
+    the one with the highest score. If GT contains -1 or there is a single GT,
+    no swap check is attempted.
+
+    Args:
+        predictions_list: list[list[int]]   # [[p1,p2,...], [p1,p2,...], ...]
+        gt_list: list[int]                  # [gt1, gt2, ...]
+        k: Top-k to consider
+
+    Returns:
+        best_actual:    list[list[int]]  # shaped like predictions_list but with singletons [[gt_i], ...]
+        best_predicted: list[list[int]]  # same as input predictions_list
+        best_score:     float | None
+    """
+    # Single GT or -1 present → no swap
+    if len(gt_list) == 1 or gt_list == [-1] or (-1 in gt_list):
+        actual = [[gt] for gt in gt_list]
+        return actual, predictions_list, None
+
+    best_score = -1
+    best_perm = None
+
+    for perm in itertools.permutations(range(len(gt_list))):
+        actual = [[gt_list[i]] for i in perm]
+        predicted = predictions_list
+        score = mapk(actual, predicted, k=k)
+        if score > best_score:
+            best_score = score
+            best_perm = perm
+
+    best_actual = [[gt_list[i]] for i in best_perm]
+    best_predicted = predictions_list
+    return best_actual, best_predicted, best_score
+
+
 def evaluate_all_descriptors_and_distances(
     qsd1_dir: str, museum_dir: str,
     ground_truth_pickle: str, values_per_bin: int = 1,
@@ -278,115 +313,195 @@ def evaluate_all_descriptors_and_distances(
     mode: str = "global"):
     """
     Evaluate all combinations of descriptors and distance metrics.
+    Handles multi-painting images properly by automatically using segmented
+    paintings when available instead of the original multi-painting image.
 
-    Args:
-        qsd1_dir: Query images directory
-        museum_dir: Museum database directory
-        ground_truth_pickle: Path to ground truth pickle
-        values_per_bin: Number of values per histogram bin
-        k_values: List of k values for evaluation
-        descriptors: List of descriptors to evaluate (None = all)
-        distance_metrics: List of distance metrics to evaluate (None = all)
+    Top-k evaluation:
+      • GT == [-1]: counting as correct iff the system predicts -1 within top-k.
+      • Multi-painting: image-level Top-k checks ANY subpainting vs the GT set.
+      • mAP@k is computed over flattened (subpainting-level) lists and includes -1 pairs.
     """
     qsd1_path = Path(qsd1_dir)
-    query_images = sorted(qsd1_path.glob('*.jpg'))
+    all_query_images = sorted(qsd1_path.glob('*.jpg'))
 
-    # Load ground truth
+    import re
+
+    # Map images that have segmented versions
+    has_segments = {}
+    for img in all_query_images:
+        match = re.match(r'(\d+)_(\d+)\.jpg$', img.name)
+        if match:
+            parent_id = int(match.group(1))
+            has_segments[parent_id] = True
+
+    # Filter: use segments, skip originals that have segments
+    query_images = []
+    for img in all_query_images:
+        if re.search(r'_\d+\.jpg$', img.name):
+            query_images.append(img)
+        else:
+            parent_id = int(img.stem)
+            if parent_id not in has_segments:
+                query_images.append(img)
+            else:
+                logger.debug(f"Skipping {img.name} - using segmented versions instead")
+
+    logger.info(f"Filtered {len(all_query_images)} -> {len(query_images)} images (skipped originals with segments)")
+
+    # Load GT
     with open(ground_truth_pickle, 'rb') as f:
         ground_truth = pickle.load(f)
-
     logger.info(f"Loaded ground truth: {len(ground_truth)} entries")
 
-    # Use provided lists or default to all
+    # Group queries by parent (e.g., {2: ['00002_0.jpg','00002_1.jpg']})
+    grouped_queries = {}
+    for query_path in query_images:
+        stem = query_path.stem
+        parent_id = int(stem.split('_')[0])
+        if parent_id not in grouped_queries:
+            grouped_queries[parent_id] = []
+        grouped_queries[parent_id].append(query_path)
+
+    for parent_id in grouped_queries:
+        grouped_queries[parent_id].sort()
+
+    # Validate descriptor / distance lists
     if descriptors is None:
         descriptors = ALL_DESCRIPTORS
     else:
-        # Validate provided descriptors
         for desc in descriptors:
             if desc not in ALL_DESCRIPTORS:
-                raise ValueError(f"Invalid descriptor: {desc}. "
-                                 f"Valid options: {ALL_DESCRIPTORS}")
+                raise ValueError(f"Invalid descriptor: {desc}")
 
     if distance_metrics is None:
         distance_metrics = ALL_DISTANCE_METRICS
     else:
-        # Validate provided distance metrics
         for dist in distance_metrics:
             if dist not in ALL_DISTANCE_METRICS:
-                raise ValueError(f"Invalid distance metric: {dist}. "
-                                 f"Valid options: {ALL_DISTANCE_METRICS}")
+                raise ValueError(f"Invalid distance metric: {dist}")
 
-    # Results dictionary - organized by descriptor then distance
     all_results = {}
     total_combinations = len(descriptors) * len(distance_metrics)
-    combination_count = 0
-
-    logger.info(f"Descriptors: {len(descriptors)}, "
-                f"Distance Metrics: {len(distance_metrics)}")
+    logger.info(f"Descriptors: {len(descriptors)}, Distance Metrics: {len(distance_metrics)}")
     logger.info(f"Total Combinations: {total_combinations}")
     logger.info(f"Values per bin: {values_per_bin}")
 
+    combo_idx = 0
     for desc_idx, descriptor in enumerate(descriptors):
         descriptor_results = {}
-
-        logger.info(f"DESCRIPTOR: {DESCRIPTOR_NAMES[descriptor]} "
-                    f"({desc_idx + 1}/{len(descriptors)})")
-
-        # Create system once per descriptor with caching enabled
-        # The first distance metric will build the database, the rest will reuse it
+        logger.info(f"DESCRIPTOR: {DESCRIPTOR_NAMES[descriptor]} ({desc_idx + 1}/{len(descriptors)})")
         system = None
 
         for dist_metric in distance_metrics:
-            combination_count += 1
-            logger.info(
-                f"[{combination_count}/{total_combinations}] "
-                f"{DESCRIPTOR_NAMES[descriptor]} + {DISTANCE_NAMES[dist_metric]}")
+            combo_idx += 1
+            logger.info(f"[{combo_idx}/{total_combinations}] "
+                        f"{DESCRIPTOR_NAMES[descriptor]} + {DISTANCE_NAMES[dist_metric]}")
 
-            # Initialize system with cache (reuses database if descriptor unchanged)
             if system is None:
                 system = ComputeImageFeatures(
-                    museum_dir, dist_metric, descriptor, mode, values_per_bin)
+                    museum_dir, dist_metric, descriptor, mode, values_per_bin,
+                    ground_truth=ground_truth_pickle
+                )
             else:
-                # Reuse existing system, only update distance metric
                 system.distance_metric = dist_metric
                 logger.info(f"Reusing cached database for {DESCRIPTOR_NAMES[descriptor]}")
 
-            # Retrieve for all queries
-            all_predicted = []
-            all_actual = []
+            # Flattened lists for mAP
+            all_predicted_flat = []
+            all_actual_flat = []
 
-            for query_idx, query_path in enumerate(
-                    tqdm(query_images, desc="Queries", leave=False)
-            ):
-                if query_idx < len(ground_truth):
-                    # retrieved = system.retrieve(str(query_path), k=max(k_values))
+            # Image-level Top-k counters (including -1)
+            img_valid = 0
+            img_top1_hits = 0
+            img_top5_hits = 0
+
+            for parent_id in sorted(grouped_queries.keys()):
+                query_paths = grouped_queries[parent_id]
+                gt = ground_truth[parent_id]
+                gt_list = gt if isinstance(gt, list) else [gt]
+
+                # Retrieve predictions for all sub-paintings
+                predictions_for_image = []
+                for query_path in tqdm(query_paths, desc=f"Parent {parent_id}", leave=False):
                     retrieval_result = system.retrieve(str(query_path), k=max(k_values))
+
                     if mode == "local":
                         retrieved, _ = retrieval_result
-                        predicted_ids = [img_id for img_id, _, _ in retrieved]
+                        if len(retrieved) > 0 and retrieved[0][0] == -1:
+                            predicted_ids = [-1]
+                        else:
+                            predicted_ids = [img_id for img_id, _, _ in retrieved]
                     else:
                         retrieved = retrieval_result
-                        predicted_ids = [img_id for img_id, _ in retrieved]
+                        if len(retrieved) > 0 and retrieved[0] == -1:
+                            predicted_ids = [-1]
+                        else:
+                            predicted_ids = [img_id for img_id, _ in retrieved]
 
-                    # Get ground truth for this query
-                    gt = ground_truth[query_idx]
-                    actual_ids = gt if isinstance(gt, list) else [gt]
+                    predictions_for_image.append(predicted_ids)
 
-                    all_predicted.append(predicted_ids)
-                    all_actual.append(actual_ids)
+                # swapped painting order matching (not working when gt_list has -1 or single item)
+                best_actual, best_predicted, _ = if_swapped(
+                    predictions_for_image, gt_list, k=max(k_values)
+                )
 
-            # Compute mAP@1 and mAP@5 using the new metrics
-            map_1 = mapk(all_actual, all_predicted, k=1)
-            map_5 = mapk(all_actual, all_predicted, k=5)
+                # ---- Flatten for mAP (INCLUDING -1 policy) ----
+                # We keep -1 pairs so that mAP@k rewards ranking -1 within top-k
+                all_predicted_flat.extend(best_predicted)
+                all_actual_flat.extend(best_actual)
+
+                # ---- Image-level Top-k (including -1 as valid) ----
+                img_valid += 1
+
+                if gt_list == [-1]:
+                    # Count a hit if any sub-painting predicts -1 within top-k
+                    top1_hit = any((pred and pred[0] == -1) for pred in best_predicted)
+                    top5_hit = any((-1 in (pred[:5] if pred else [])) for pred in best_predicted)
+                    if top1_hit:
+                        img_top1_hits += 1
+                    if top5_hit:
+                        img_top5_hits += 1
+                else:
+                    gt_set = set(gt_list)
+
+                    # Union of first predictions across sub-paintings (allow -1; it just won't match gt_set)
+                    top1_preds = {pred[0] for pred in best_predicted if pred}
+
+                    # Union of top-5 predictions across sub-paintings
+                    top5_preds = set()
+                    for pred in best_predicted:
+                        if pred:
+                            top5_preds.update(pred[:5])
+
+                    if gt_set & top1_preds:
+                        img_top1_hits += 1
+                    if gt_set & top5_preds:
+                        img_top5_hits += 1
+
+            # Compute mAP@1 and mAP@5 over flattened pairs
+            map_1 = mapk(all_actual_flat, all_predicted_flat, k=1)
+            map_5 = mapk(all_actual_flat, all_predicted_flat, k=5)
+
+            # Image-level accuracies
+            top1_acc = img_top1_hits / img_valid if img_valid else 0.0
+            top5_acc = img_top5_hits / img_valid if img_valid else 0.0
 
             descriptor_results[DISTANCE_NAMES[dist_metric]] = {
                 'mAP@1': map_1,
                 'mAP@5': map_5,
-                'predicted': all_predicted,
-                'actual': all_actual
+                'img_top1_acc': top1_acc,
+                'img_top5_acc': top5_acc,
+                'img_valid': img_valid,
+                'predicted': all_predicted_flat,
+                'actual': all_actual_flat,
+                'grouped_queries': grouped_queries
             }
 
             logger.info(f"   mAP@1: {map_1:.4f}, mAP@5: {map_5:.4f}")
+            logger.info("   Image-level accuracy (including GT=-1 matches):")
+            logger.info(f"     Valid images: {img_valid}")
+            logger.info(f"     Top-1 accuracy: {img_top1_hits}/{img_valid} = {top1_acc:.4f}")
+            logger.info(f"     Top-5 accuracy: {img_top5_hits}/{img_valid} = {top5_acc:.4f}")
 
         all_results[DESCRIPTOR_NAMES[descriptor]] = descriptor_results
 

@@ -4,7 +4,7 @@ import cv2
 from scipy.ndimage import (
     binary_opening, binary_closing, binary_fill_holes, gaussian_filter
 )
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 import matplotlib.pyplot as plt
 import warnings
 import argparse
@@ -177,6 +177,205 @@ def _post_clean(mask: np.ndarray,
     mask = _morphological_area_opening(mask, min_area=min_area)
 
     return mask
+
+
+def detect_gaps_improved(signal: np.ndarray, 
+                         min_gap_size: int = 5,
+                         min_gap_ratio: float = 0.015) -> List[Tuple[int, int]]:
+    """
+    Improved gap detection with adaptive thresholds.
+    
+    Args:
+        signal: 1D binary signal (0=background, 1=foreground)
+        min_gap_size: Minimum gap size in pixels
+        min_gap_ratio: Minimum gap size as ratio of total signal length
+    
+    Returns:
+        List of (gap_start, gap_end) tuples sorted by gap size
+    """
+    # Adaptive minimum gap size - more lenient
+    adaptive_min_gap = max(min_gap_size, int(len(signal) * min_gap_ratio))
+    
+    # Find transitions
+    diff = np.diff(np.concatenate([[0], signal, [0]]))
+    starts = np.where(diff == 1)[0]  # Foreground starts
+    ends = np.where(diff == -1)[0]    # Foreground ends
+    
+    if len(starts) == 0 or len(ends) == 0:
+        return []
+    
+    # Find gaps between foreground regions
+    gaps = []
+    for i in range(len(ends) - 1):
+        gap_start = ends[i]
+        gap_end = starts[i + 1]
+        gap_size = gap_end - gap_start
+        
+        if gap_size >= adaptive_min_gap:
+            gaps.append((gap_start, gap_end, gap_size))
+    
+    # Sort by gap size (largest first)
+    gaps.sort(key=lambda x: x[2], reverse=True)
+    
+    return [(g[0], g[1]) for g in gaps]
+
+
+def analyze_gap_quality(image: np.ndarray, 
+                        mask: np.ndarray,
+                        gap_start: int, 
+                        gap_end: int,
+                        axis: int = 1) -> float:
+    """
+    Analyze the quality of a detected gap to determine if it's a real separation.
+    
+    Args:
+        image: Original image
+        mask: Segmentation mask
+        gap_start: Gap start position
+        gap_end: Gap end position
+        axis: 0 for vertical gap (columns), 1 for horizontal gap (rows)
+    
+    Returns:
+        Quality score 0-1, where higher means more likely a real gap
+    """
+    H, W = mask.shape
+    gap_size = gap_end - gap_start
+    
+    # Extract gap region
+    if axis == 1:  # Vertical gap (side-by-side paintings)
+        gap_region = mask[:, gap_start:gap_end]
+        gap_image = image[:, gap_start:gap_end]
+    else:  # Horizontal gap (stacked paintings)
+        gap_region = mask[gap_start:gap_end, :]
+        gap_image = image[gap_start:gap_end, :]
+    
+    if gap_region.size == 0:
+        return 0.0
+    
+    # Check 1: How much background is in the gap? (most important)
+    fg_pixels = np.sum(gap_region)
+    total_pixels = gap_region.size
+    bg_ratio = 1.0 - (fg_pixels / (total_pixels + 1e-6))
+    
+    # If gap is mostly foreground, it's probably not a real gap
+    if bg_ratio < 0.3:
+        return 0.1
+    
+    # Check 2: Gap size relative to image dimension
+    if axis == 1:
+        size_ratio = gap_size / W
+    else:
+        size_ratio = gap_size / H
+    
+    # Larger gaps are more likely real separations
+    size_score = min(1.0, size_ratio / 0.05)  # Normalize around 5% of image
+    
+    # Check 3: Color consistency in gap
+    lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB).astype(np.float32)
+    stats = _estimate_bg_from_borders(lab, border=20)
+    bg_median = stats["median"]
+    
+    # Get gap colors
+    if axis == 1:
+        gap_colors = lab[:, gap_start:gap_end].reshape(-1, 3)
+    else:
+        gap_colors = lab[gap_start:gap_end, :].reshape(-1, 3)
+    
+    if len(gap_colors) > 10:
+        gap_color_median = np.median(gap_colors, axis=0)
+        color_distance = np.linalg.norm(gap_color_median - bg_median)
+        # If gap color is similar to background, higher score
+        color_score = max(0.0, 1.0 - color_distance / 30.0)
+    else:
+        color_score = 0.5
+    
+    # Combine scores with weights
+    # Background ratio is most important (70%), then gap size (20%), then color (10%)
+    quality_score = 0.7 * bg_ratio + 0.2 * size_score + 0.1 * color_score
+    
+    return quality_score
+
+
+def detect_multiple_paintings_smart(image: np.ndarray,
+                                    mask: np.ndarray,
+                                    min_gap_size: int = 5,
+                                    min_gap_ratio: float = 0.015,
+                                    quality_threshold: float = 0.45,
+                                    debug: bool = False) -> Tuple[int, Optional[int], Optional[str]]:
+    """
+    Detect if there are multiple paintings and where to split.
+    
+    Returns:
+        (num_paintings, split_position, split_type)
+        - num_paintings: 1 or 2
+        - split_position: column or row index to split at (None if single painting)
+        - split_type: 'vertical' or 'horizontal' (None if single painting)
+    """
+    H, W = mask.shape
+    
+    # Project mask to signals
+    vertical_signal = np.sum(mask, axis=0)  # Sum rows -> column signal
+    vertical_signal = (vertical_signal > 0).astype(np.int32)
+    
+    horizontal_signal = np.sum(mask, axis=1)  # Sum columns -> row signal
+    horizontal_signal = (horizontal_signal > 0).astype(np.int32)
+    
+    # Detect gaps in both directions
+    vertical_gaps = detect_gaps_improved(vertical_signal, min_gap_size, min_gap_ratio)
+    horizontal_gaps = detect_gaps_improved(horizontal_signal, min_gap_size, min_gap_ratio)
+    
+    if debug:
+        print(f"  Found {len(vertical_gaps)} vertical gaps, {len(horizontal_gaps)} horizontal gaps")
+    
+    # Analyze gap quality for vertical gaps (side-by-side paintings)
+    best_vertical_gap = None
+    best_vertical_quality = 0.0
+    
+    for gap_start, gap_end in vertical_gaps[:5]:  # Check top 5 gaps
+        quality = analyze_gap_quality(image, mask, gap_start, gap_end, axis=1)
+        if debug and quality > 0.3:
+            print(f"  Vertical gap [{gap_start}:{gap_end}] quality: {quality:.3f}")
+        if quality > best_vertical_quality:
+            best_vertical_quality = quality
+            best_vertical_gap = (gap_start, gap_end)
+    
+    # Analyze gap quality for horizontal gaps (stacked paintings)
+    best_horizontal_gap = None
+    best_horizontal_quality = 0.0
+    
+    for gap_start, gap_end in horizontal_gaps[:5]:  # Check top 5 gaps
+        quality = analyze_gap_quality(image, mask, gap_start, gap_end, axis=0)
+        if debug and quality > 0.3:
+            print(f"  Horizontal gap [{gap_start}:{gap_end}] quality: {quality:.3f}")
+        if quality > best_horizontal_quality:
+            best_horizontal_quality = quality
+            best_horizontal_gap = (gap_start, gap_end)
+    
+    if debug:
+        print(f"  Best vertical: {best_vertical_quality:.3f}, Best horizontal: {best_horizontal_quality:.3f}")
+        print(f"  Threshold: {quality_threshold}")
+    
+    # Decision: choose the best gap if quality exceeds threshold
+    # Prefer vertical split (side-by-side) if both are similar
+    if best_vertical_quality >= quality_threshold and best_vertical_quality >= best_horizontal_quality - 0.05:
+        # Vertical split (side-by-side)
+        split_pos = (best_vertical_gap[0] + best_vertical_gap[1]) // 2
+        if debug:
+            print(f"  → VERTICAL SPLIT at column {split_pos}")
+        return 2, split_pos, 'vertical'
+    
+    elif best_horizontal_quality >= quality_threshold:
+        # Horizontal split (stacked)
+        split_pos = (best_horizontal_gap[0] + best_horizontal_gap[1]) // 2
+        if debug:
+            print(f"  → HORIZONTAL SPLIT at row {split_pos}")
+        return 2, split_pos, 'horizontal'
+    
+    else:
+        # Single painting
+        if debug:
+            print(f"  → SINGLE PAINTING (quality below threshold)")
+        return 1, None, None
 
 
 def _project_mask_to_signal(mask: np.ndarray, axis: int = 0) -> np.ndarray:
@@ -567,207 +766,158 @@ def segment_multiple_paintings(image: np.ndarray,
                                 sat_min: float = 30.0,
                                 hue_percentile: float = 92.0,
                                 hue_margin_deg: float = 6.0,
-                                min_gap_size: int = 10,
-                                return_debug_info: bool = False):
+                                min_gap_size: int = 5,
+                                min_gap_ratio: float = 0.015,
+                                quality_threshold: float = 0.45,
+                                return_debug_info: bool = False,
+                                debug: bool = False):
     """
-    Segment multiple paintings in an image by detecting gaps and splitting.
-
-    This function first performs an initial segmentation, then analyzes the mask
-    to detect if there are multiple paintings (horizontal or vertical layout).
-    If multiple paintings are detected, it splits the image and segments each part
-    separately, then merges the results.
-
-    Args:
-        image (np.ndarray): Input image in BGR format.
-        border (int): Width of border pixels for background estimation.
-        dist_percentile (float): Percentile for LAB distance threshold.
-        dist_margin (float): Margin added to LAB distance threshold.
-        min_area (int): Minimum area for morphological filtering.
-        opening_size (int): Size of morphological opening operation.
-        closing_size (int): Size of morphological closing operation.
-        wL (float): Weight for L channel in LAB distance.
-        wA (float): Weight for A channel in LAB distance.
-        wB (float): Weight for B channel in LAB distance.
-        sat_min (float): Minimum saturation threshold for hue-based segmentation.
-        hue_percentile (float): Percentile for hue distance threshold.
-        hue_margin_deg (float): Margin in degrees added to hue distance threshold.
-        min_gap_size (int): Minimum gap size (in pixels) to consider as separation between paintings.
-        return_debug_info (bool): If True, return tuple of (mask, debug_info_dict).
-
-    Returns:
-        np.ndarray or tuple: Binary mask where foreground is 1 and background is 0.
-                            If return_debug_info=True, returns (mask, debug_info_dict).
+    Segment multiple paintings in an image using smart gap detection.
+    
+    Returns list of masks - one for single painting, multiple for multiple paintings.
     """
     H, W = image.shape[:2]
-
-    # Step 1: Perform initial segmentation
+    
+    # Step 1: Initial segmentation using segment_background
     initial_mask = segment_background(
-        image, border=border, dist_percentile=dist_percentile, dist_margin=dist_margin,
-        min_area=min_area, opening_size=opening_size, closing_size=closing_size,
-        wL=wL, wA=wA, wB=wB, sat_min=sat_min, hue_percentile=hue_percentile,
-        hue_margin_deg=hue_margin_deg
+        image, border=border, dist_percentile=dist_percentile,
+        dist_margin=dist_margin, wL=wL, wA=wA, wB=wB,
+        sat_min=sat_min, hue_percentile=hue_percentile,
+        hue_margin_deg=hue_margin_deg,
+        min_area=min_area, opening_size=opening_size, closing_size=closing_size
     )
-
-    # Step 2: Analyze for horizontal split (paintings side by side)
-    # Project along vertical axis (sum each column)
-    horizontal_signal = _project_mask_to_signal(initial_mask, axis=0)
-    num_h, gap_h_start, gap_h_end = _detect_gap_pattern(horizontal_signal, min_gap_size)
-
-    # Step 3: Analyze for vertical split (paintings stacked)
-    # Project along horizontal axis (sum each row)
-    vertical_signal = _project_mask_to_signal(initial_mask, axis=1)
-    num_v, gap_v_start, gap_v_end = _detect_gap_pattern(vertical_signal, min_gap_size)
-
+    
+    # Step 2: Detect multiple paintings with smart gap quality analysis
+    num_paintings, split_pos, split_type = detect_multiple_paintings_smart(
+        image, initial_mask, min_gap_size, min_gap_ratio, quality_threshold, debug=debug
+    )
+    
     # Initialize debug info
     debug_info = {
         'initial_mask': initial_mask,
-        'horizontal_signal': horizontal_signal,
-        'vertical_signal': vertical_signal,
-        'num_paintings_h': num_h,
-        'num_paintings_v': num_v,
-        'split_type': 'none',
-        'split_position': None
+        'num_paintings': num_paintings,
+        'split_type': split_type if split_type else 'none',
+        'split_position': split_pos
     }
-
-    # Step 4: Decide which split to use
-    if num_h == 2 and num_v == 1:
-        # Horizontal split (side by side)
-        split_col = _find_split_position(gap_h_start, gap_h_end)
-
-        # Split image
-        left_image = image[:, :split_col]
-        right_image = image[:, split_col:]
-
-        # Segment each part
+    
+    if num_paintings == 1:
+        # Single painting
+        if return_debug_info:
+            return [initial_mask], debug_info
+        return [initial_mask]
+    
+    # Step 3: Split and re-segment each part
+    if split_type == 'vertical':
+        # Side-by-side split
+        left_image = image[:, :split_pos]
+        right_image = image[:, split_pos:]
+        
+        # Segment each part independently
         left_mask = segment_background(
-            left_image, border=border, dist_percentile=dist_percentile, dist_margin=dist_margin,
-            min_area=min_area, opening_size=opening_size, closing_size=closing_size,
-            wL=wL, wA=wA, wB=wB, sat_min=sat_min, hue_percentile=hue_percentile,
-            hue_margin_deg=hue_margin_deg
+            left_image, border=border, dist_percentile=dist_percentile,
+            dist_margin=dist_margin, wL=wL, wA=wA, wB=wB,
+            sat_min=sat_min, hue_percentile=hue_percentile,
+            hue_margin_deg=hue_margin_deg,
+            min_area=min_area // 2, opening_size=opening_size, closing_size=closing_size
         )
+        
         right_mask = segment_background(
-            right_image, border=border, dist_percentile=dist_percentile, dist_margin=dist_margin,
-            min_area=min_area, opening_size=opening_size, closing_size=closing_size,
-            wL=wL, wA=wA, wB=wB, sat_min=sat_min, hue_percentile=hue_percentile,
-            hue_margin_deg=hue_margin_deg
+            right_image, border=border, dist_percentile=dist_percentile,
+            dist_margin=dist_margin, wL=wL, wA=wA, wB=wB,
+            sat_min=sat_min, hue_percentile=hue_percentile,
+            hue_margin_deg=hue_margin_deg,
+            min_area=min_area // 2, opening_size=opening_size, closing_size=closing_size
         )
-
-        # Merge masks
-        final_mask = np.zeros((H, W), dtype=np.uint8)
-        final_mask[:, :split_col] = left_mask
-        final_mask[:, split_col:] = right_mask
-
-        debug_info['split_type'] = 'horizontal'
-        debug_info['split_position'] = split_col
-
-        if return_debug_info:
-            return final_mask, debug_info
-        return final_mask
-
-    elif num_v == 2 and num_h == 1:
-        # Vertical split (stacked)
-        split_row = _find_split_position(gap_v_start, gap_v_end)
-
-        # Split image
-        top_image = image[:split_row, :]
-        bottom_image = image[split_row:, :]
-
-        # Segment each part
-        top_mask = segment_background(
-            top_image, border=border, dist_percentile=dist_percentile, dist_margin=dist_margin,
-            min_area=min_area, opening_size=opening_size, closing_size=closing_size,
-            wL=wL, wA=wA, wB=wB, sat_min=sat_min, hue_percentile=hue_percentile,
-            hue_margin_deg=hue_margin_deg
-        )
-        bottom_mask = segment_background(
-            bottom_image, border=border, dist_percentile=dist_percentile, dist_margin=dist_margin,
-            min_area=min_area, opening_size=opening_size, closing_size=closing_size,
-            wL=wL, wA=wA, wB=wB, sat_min=sat_min, hue_percentile=hue_percentile,
-            hue_margin_deg=hue_margin_deg
-        )
-
-        # Merge masks
-        final_mask = np.zeros((H, W), dtype=np.uint8)
-        final_mask[:split_row, :] = top_mask
-        final_mask[split_row:, :] = bottom_mask
-
-        debug_info['split_type'] = 'vertical'
-        debug_info['split_position'] = split_row
-
-        if return_debug_info:
-            return final_mask, debug_info
-        return final_mask
-
-    elif num_h == 2 and num_v == 2:
-        # Both horizontal and vertical gaps detected - prioritize the larger gap
-        h_gap_size = gap_h_end - gap_h_start
-        v_gap_size = gap_v_end - gap_v_start
-
-        if h_gap_size >= v_gap_size:
-            # Use horizontal split
-            split_col = _find_split_position(gap_h_start, gap_h_end)
-
-            left_image = image[:, :split_col]
-            right_image = image[:, split_col:]
-
-            left_mask = segment_background(
-                left_image, border=border, dist_percentile=dist_percentile, dist_margin=dist_margin,
-                min_area=min_area, opening_size=opening_size, closing_size=closing_size,
-                wL=wL, wA=wA, wB=wB, sat_min=sat_min, hue_percentile=hue_percentile,
-                hue_margin_deg=hue_margin_deg
-            )
-            right_mask = segment_background(
-                right_image, border=border, dist_percentile=dist_percentile, dist_margin=dist_margin,
-                min_area=min_area, opening_size=opening_size, closing_size=closing_size,
-                wL=wL, wA=wA, wB=wB, sat_min=sat_min, hue_percentile=hue_percentile,
-                hue_margin_deg=hue_margin_deg
-            )
-
-            final_mask = np.zeros((H, W), dtype=np.uint8)
-            final_mask[:, :split_col] = left_mask
-            final_mask[:, split_col:] = right_mask
-
-            debug_info['split_type'] = 'horizontal'
-            debug_info['split_position'] = split_col
-
-            if return_debug_info:
-                return final_mask, debug_info
-            return final_mask
+        
+        # Check minimum area requirement (3% of total image)
+        total_pixels = H * W
+        min_painting_area = total_pixels * 0.03
+        
+        left_area = np.sum(left_mask)
+        right_area = np.sum(right_mask)
+        
+        if debug:
+            print(f"  Left area: {left_area} ({left_area/total_pixels*100:.1f}%), "
+                  f"Right area: {right_area} ({right_area/total_pixels*100:.1f}%)")
+        
+        # Return based on areas
+        if left_area < min_painting_area and right_area >= min_painting_area:
+            right_full = np.zeros((H, W), dtype=np.uint8)
+            right_full[:, split_pos:] = right_mask
+            masks = [right_full]
+        elif right_area < min_painting_area and left_area >= min_painting_area:
+            left_full = np.zeros((H, W), dtype=np.uint8)
+            left_full[:, :split_pos] = left_mask
+            masks = [left_full]
+        elif left_area < min_painting_area and right_area < min_painting_area:
+            masks = [initial_mask]
         else:
-            # Use vertical split
-            split_row = _find_split_position(gap_v_start, gap_v_end)
-
-            top_image = image[:split_row, :]
-            bottom_image = image[split_row:, :]
-
-            top_mask = segment_background(
-                top_image, border=border, dist_percentile=dist_percentile, dist_margin=dist_margin,
-                min_area=min_area, opening_size=opening_size, closing_size=closing_size,
-                wL=wL, wA=wA, wB=wB, sat_min=sat_min, hue_percentile=hue_percentile,
-                hue_margin_deg=hue_margin_deg
-            )
-            bottom_mask = segment_background(
-                bottom_image, border=border, dist_percentile=dist_percentile, dist_margin=dist_margin,
-                min_area=min_area, opening_size=opening_size, closing_size=closing_size,
-                wL=wL, wA=wA, wB=wB, sat_min=sat_min, hue_percentile=hue_percentile,
-                hue_margin_deg=hue_margin_deg
-            )
-
-            final_mask = np.zeros((H, W), dtype=np.uint8)
-            final_mask[:split_row, :] = top_mask
-            final_mask[split_row:, :] = bottom_mask
-
-            debug_info['split_type'] = 'vertical'
-            debug_info['split_position'] = split_row
-
-            if return_debug_info:
-                return final_mask, debug_info
-            return final_mask
-    else:
-        # Single painting or no clear separation detected
+            # Both paintings are large enough
+            left_full = np.zeros((H, W), dtype=np.uint8)
+            left_full[:, :split_pos] = left_mask
+            right_full = np.zeros((H, W), dtype=np.uint8)
+            right_full[:, split_pos:] = right_mask
+            masks = [left_full, right_full]
+        
         if return_debug_info:
-            return initial_mask, debug_info
-        return initial_mask
+            return masks, debug_info
+        return masks
+    
+    else:  # horizontal split
+        # Stacked split
+        top_image = image[:split_pos, :]
+        bottom_image = image[split_pos:, :]
+        
+        # Segment each part independently
+        top_mask = segment_background(
+            top_image, border=border, dist_percentile=dist_percentile,
+            dist_margin=dist_margin, wL=wL, wA=wA, wB=wB,
+            sat_min=sat_min, hue_percentile=hue_percentile,
+            hue_margin_deg=hue_margin_deg,
+            min_area=min_area // 2, opening_size=opening_size, closing_size=closing_size
+        )
+        
+        bottom_mask = segment_background(
+            bottom_image, border=border, dist_percentile=dist_percentile,
+            dist_margin=dist_margin, wL=wL, wA=wA, wB=wB,
+            sat_min=sat_min, hue_percentile=hue_percentile,
+            hue_margin_deg=hue_margin_deg,
+            min_area=min_area // 2, opening_size=opening_size, closing_size=closing_size
+        )
+        
+        # Check minimum area requirement (1% of total image for horizontal)
+        total_pixels = H * W
+        min_painting_area = total_pixels * 0.015
+        
+        top_area = np.sum(top_mask)
+        bottom_area = np.sum(bottom_mask)
+        
+        if debug:
+            print(f"  Top area: {top_area} ({top_area/total_pixels*100:.1f}%), "
+                  f"Bottom area: {bottom_area} ({bottom_area/total_pixels*100:.1f}%)")
+        
+        # Return based on areas
+        if top_area < min_painting_area and bottom_area >= min_painting_area:
+            bottom_full = np.zeros((H, W), dtype=np.uint8)
+            bottom_full[split_pos:, :] = bottom_mask
+            masks = [bottom_full]
+        elif bottom_area < min_painting_area and top_area >= min_painting_area:
+            top_full = np.zeros((H, W), dtype=np.uint8)
+            top_full[:split_pos, :] = top_mask
+            masks = [top_full]
+        elif top_area < min_painting_area and bottom_area < min_painting_area:
+            masks = [initial_mask]
+        else:
+            # Both paintings are large enough
+            top_full = np.zeros((H, W), dtype=np.uint8)
+            top_full[:split_pos, :] = top_mask
+            bottom_full = np.zeros((H, W), dtype=np.uint8)
+            bottom_full[split_pos:, :] = bottom_mask
+            masks = [top_full, bottom_full]
+        
+        if return_debug_info:
+            return masks, debug_info
+        return masks
 
 
 def segment_background(image: np.ndarray,
@@ -830,8 +980,10 @@ def segment_background(image: np.ndarray,
     H, W = L.shape
     b = max(1, min(border, min(H, W)//4))
     border_mask = np.zeros((H, W), dtype=bool)
-    border_mask[:b, :] = True; border_mask[-b:, :] = True
-    border_mask[:, :b] = True; border_mask[:, -b:] = True
+    border_mask[:b, :] = True
+    border_mask[-b:, :] = True
+    border_mask[:, :b] = True
+    border_mask[:, -b:] = True
 
     # 3) Robust weighted LAB distance (downweight L)
     dist_lab = _lab_robust_distance_weighted(L, A, B, med, mad, wL=wL, wA=wA, wB=wB)
@@ -917,65 +1069,19 @@ def run_experiments_on_dataset(image_folder: str,
                 if gt_mask is not None:
                     gt_mask = (gt_mask > 127).astype(np.uint8)
 
-            # Run experiment (COLOR-ONLY)
-            # Check if this is multi-painting mode
+            # Run experiment
             is_multi_painting = exp_config['func'].__name__ == 'segment_multiple_paintings'
 
             if is_multi_painting:
-                # Call with debug info
-                pred_mask, debug_info = exp_config['func'](image, **exp_config['params'], return_debug_info=True)
+                # Returns list of masks
+                masks_list = exp_config['func'](image, **exp_config['params'])
+                # For evaluation, merge all masks
+                pred_mask = np.zeros_like(masks_list[0])
+                for m in masks_list:
+                    pred_mask = np.logical_or(pred_mask, m).astype(np.uint8)
             else:
+                masks_list = None
                 pred_mask = exp_config['func'](image, **exp_config['params'])
-                debug_info = None
-
-            # Save signal analysis visualization for multi-painting mode
-            if save_outputs and is_multi_painting and debug_info is not None:
-                signal_viz_path = os.path.join(exp_output_folder, 'visualizations',
-                                               os.path.splitext(img_file)[0] + '_signals.png')
-                visualize_signal_analysis(
-                    image,
-                    debug_info['initial_mask'],
-                    min_gap_size=exp_config['params'].get('min_gap_size', 10),
-                    save_path=signal_viz_path
-                )
-
-                # Save comparison visualization (before vs after split)
-                comparison_viz_path = os.path.join(exp_output_folder, 'visualizations',
-                                                   os.path.splitext(img_file)[0] + '_comparison.png')
-                split_info = {
-                    'type': debug_info['split_type'],
-                    'position': debug_info['split_position']
-                }
-                visualize_split_comparison(
-                    image,
-                    debug_info['initial_mask'],
-                    pred_mask,
-                    split_info,
-                    save_path=comparison_viz_path
-                )
-
-            # Per-image step visualization
-            if save_outputs:
-                viz_steps_path = os.path.join(exp_output_folder, 'visualizations',
-                                              os.path.splitext(img_file)[0] + '_steps.png')
-                # Convert BGR to RGB for visualization
-                image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-                visualize_color_pipeline_steps_mask(
-                    image_rgb,
-                    border=exp_config['params'].get('border', 20),
-                    dist_percentile=exp_config['params'].get('dist_percentile', 92.0),
-                    dist_margin=exp_config['params'].get('dist_margin', 0.5),
-                    opening_size=exp_config['params'].get('opening_size', 5),
-                    closing_size=exp_config['params'].get('closing_size', 7),
-                    min_area=exp_config['params'].get('min_area', 200),
-                    wL=exp_config['params'].get('wL', 0.6),
-                    wA=exp_config['params'].get('wA', 1.0),
-                    wB=exp_config['params'].get('wB', 1.0),
-                    sat_min=exp_config['params'].get('sat_min', 30.0),
-                    hue_percentile=exp_config['params'].get('hue_percentile', 92.0),
-                    hue_margin_deg=exp_config['params'].get('hue_margin_deg', 6.0),
-                    save_path=viz_steps_path
-                )
 
             # Calculate metrics if GT available
             metrics = None
@@ -984,10 +1090,7 @@ def run_experiments_on_dataset(image_folder: str,
 
                 precision = precision_mask(tp, fp)
                 recall = recall_mask(tp, fn)
-
-                # f1 = 2*((precision*recall)/(precision+recall))
                 f1 = f1_mask(tp, fp, fn)
-                print(f"Precision: {precision} | Recall: {recall} | F1: {f1}")
 
                 metrics = {
                     'precision': precision,
@@ -1015,16 +1118,32 @@ def run_experiments_on_dataset(image_folder: str,
             segmented = apply_mask_to_image_mask(image, pred_mask)
 
             if save_outputs:
-                # Save mask
-                mask_filename = os.path.splitext(img_file)[0] + '.png'
+                base_name = os.path.splitext(img_file)[0]
+                
+                # Save combined mask
+                mask_filename = base_name + '.png'
                 mask_path = os.path.join(exp_output_folder, 'masks', mask_filename)
                 cv2.imwrite(mask_path, (pred_mask * 255).astype(np.uint8))
 
-                # Save segmented output (already in BGR format, perfect for cv2.imwrite)
+                # Save combined segmented output
                 seg_path = os.path.join(exp_output_folder, 'segmented', img_file)
                 cv2.imwrite(seg_path, segmented)
+                
+                # If multiple paintings detected, save separate masks and segmented images
+                if is_multi_painting and masks_list is not None and len(masks_list) > 1:
+                    for idx, individual_mask in enumerate(masks_list):
+                        # Save individual mask as <id>_<N>.png
+                        individual_mask_filename = f"{base_name}_{idx}.png"
+                        individual_mask_path = os.path.join(exp_output_folder, 'masks', individual_mask_filename)
+                        cv2.imwrite(individual_mask_path, (individual_mask * 255).astype(np.uint8))
+                        
+                        # Save individual segmented painting (no background)
+                        individual_segmented = apply_mask_to_image_mask(image, individual_mask)
+                        individual_seg_filename = f"{base_name}_{idx}.jpg"
+                        individual_seg_path = os.path.join(exp_output_folder, 'segmented', individual_seg_filename)
+                        cv2.imwrite(individual_seg_path, individual_segmented)
 
-                # Create and save visualization (overall)
+                # Create and save visualization
                 viz_filename = os.path.splitext(img_file)[0] + '_viz.png'
                 viz_path = os.path.join(exp_output_folder, 'visualizations', viz_filename)
 
@@ -1078,19 +1197,19 @@ def run_experiments_on_dataset(image_folder: str,
 if __name__ == "__main__":
     # Parse command-line arguments
     parser = argparse.ArgumentParser(
-        description="Color-only background removal and segmentation"
+        description="Color-only background removal and segmentation with smart multi-painting detection"
     )
     parser.add_argument(
         "--image_folder",
         type=str,
         default="data/raw/qsd2_w3/",
-        help="Path to folder containing input images (default: data/raw/qsd2_w2/)"
+        help="Path to folder containing input images (default: data/raw/qsd2_w3/)"
     )
     parser.add_argument(
         "--output_folder",
         type=str,
         default="results/seg/",
-        help="Path to folder for output results (default: results/method_color_only_final/)"
+        help="Path to folder for output results (default: results/seg/)"
     )
     parser.add_argument(
         "--max_images",
@@ -1106,8 +1225,25 @@ if __name__ == "__main__":
     parser.add_argument(
         "--min_gap_size",
         type=int,
-        default=10,
-        help="Minimum gap size (in pixels) between paintings for multi-painting mode (default: 10)"
+        default=5,
+        help="Minimum gap size (in pixels) between paintings for multi-painting mode (default: 5)"
+    )
+    parser.add_argument(
+        "--min_gap_ratio",
+        type=float,
+        default=0.015,
+        help="Minimum gap size as ratio of image dimension (default: 0.015 = 1.5%%)"
+    )
+    parser.add_argument(
+        "--quality_threshold",
+        type=float,
+        default=0.45,
+        help="Quality threshold for gap detection (0-1, default: 0.45)"
+    )
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Enable debug output"
     )
 
     args = parser.parse_args()
@@ -1117,6 +1253,8 @@ if __name__ == "__main__":
     print(f"Multi-painting mode: {args.multi_painting}")
     if args.multi_painting:
         print(f"Min gap size: {args.min_gap_size}")
+        print(f"Min gap ratio: {args.min_gap_ratio}")
+        print(f"Quality threshold: {args.quality_threshold}")
 
     # Configuration
     IMAGE_FOLDER = args.image_folder
@@ -1126,20 +1264,23 @@ if __name__ == "__main__":
     # Experiment configuration
     if args.multi_painting:
         experiments = [{
-            'name': 'multi_painting',
+            'name': 'multi_painting_smart',
             'func': segment_multiple_paintings,
             'params': {
                 'border': 20,
                 'dist_percentile': 92.0,
                 'dist_margin': 0.5,
-                'min_area': 100,
+                'min_area': 200,
                 'opening_size': 5,
                 'closing_size': 7,
                 'wL': 0.6, 'wA': 1.0, 'wB': 1.0,
                 'sat_min': 30.0,
                 'hue_percentile': 92.0,
                 'hue_margin_deg': 6.0,
-                'min_gap_size': args.min_gap_size
+                'min_gap_size': args.min_gap_size,
+                'min_gap_ratio': args.min_gap_ratio,
+                'quality_threshold': args.quality_threshold,
+                'debug': args.debug
             }
         }]
     else:
