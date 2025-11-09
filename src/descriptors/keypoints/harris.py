@@ -37,7 +37,7 @@ def detect_harris_keypoints_from_array(
     blockSize: int = 3,
     ksize: int = 3,
     k: float = 0.04,
-    thresh_rel: float = 0.4,
+    thresh_rel: float = 0.1,
     nms_ksize: int = 3,
     **kwargs
 ) -> tuple[list[cv2.KeyPoint], np.ndarray]:

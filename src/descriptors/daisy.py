@@ -14,6 +14,7 @@ import cv2
 from src.visualization import plots
 from src.data.extract import read_image
 from src.descriptors.grayscale import convert_img_to_gray_scale
+from src.data import detect_noise, remove_noise
 
 
 def compute_daisy_descriptor_from_array(
@@ -92,6 +93,7 @@ def compute_daisy_descriptor_from_array(
                 descs_img=descs_img,
                 **kwargs
             )
+
             descs.append(descs_size)
 
         if len(descs) > 0:
@@ -100,7 +102,12 @@ def compute_daisy_descriptor_from_array(
             # sort descriptors in the initial keypoints order
             pairs = list(zip(keypoints_sorted_by_size, descs))
             pairs.sort(key=lambda x: x[0].response, reverse=True)
-            keypoints, descs = zip(*pairs)
+            try:
+                keypoints, descs = zip(*pairs)
+            except:
+                print("Error in the unzip")
+                descs = np.empty((0, 0), dtype=np.float32)
+                return keypoints, descs
 
     else:
         descs, descs_img = daisy(
@@ -112,7 +119,11 @@ def compute_daisy_descriptor_from_array(
     if visualize:
         plots.display_daisy_descriptors(descs_img, visualization_title)
 
-    return keypoints, np.asarray(descs, dtype=np.float32)
+    descs = np.asarray(descs, dtype=np.float32)
+    if len(descs) == 0:
+        descs = np.empty((0, 0), dtype=np.float32)
+
+    return keypoints, descs
 
 
 def daisy(
@@ -216,7 +227,7 @@ def daisy(
     theta = [2 * pi * j / histograms for j in range(histograms)]
     desc_dims = (rings * histograms + 1) * orientations
     descs = np.empty(
-        (desc_dims, image.shape[0] - 2 * radius, image.shape[1] - 2 * radius),
+        (max(0, desc_dims), max(0, image.shape[0] - 2 * radius), max(0, image.shape[1] - 2 * radius)),
         dtype=float_dtype,
     )
     descs[:orientations, :, :] = hist_smooth[0,
@@ -323,6 +334,9 @@ def compute_daisy_descriptor(
             descs: Array of shape (N, D) with DAISY descriptors.
     """
     img_bgr = read_image(img_path)
+    has_noise = detect_noise.noise_detector_laplace(img_bgr)
+    if has_noise:
+        img_bgr = remove_noise.apply_median_filter(img_bgr)
     return compute_daisy_descriptor_from_array(
         img_bgr,
         **kwargs
