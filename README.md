@@ -180,18 +180,23 @@ Place the datasets in the `data/raw/` folder as follows:
 Once the environment and data are set up, you can execute the pipeline to perform image retrieval.
 
 
-### 1. Remove background
+### 1. Remove background & Detect multiple Painting 
 
 <!---#### To execute manually--->
 
-The background segmentation module removes non-artwork regions using robust color-based analysis in LAB and HSV spaces, isolating the painting for cleaner descriptor extraction and retrieval. Additionally, it includes an automatic **noise detection and removal step**:
-- Noise is detected using the **Laplacian filter**, which identifies images with strong local intensity variations.
-- If noise is present, it is removed using a **Median filter**, which effectively smooths the image while preserving edges and fine details.
+The `src.models.seg` module performs robust background removal and automatic detection of multiple paintings within a single image. It combines color-space analysis (LAB and HSV), morphological filtering, and adaptive gap detection to isolate and extract each artwork accurately.
+
+The process automatically detects noise using a Laplacian filter and removes it with a Median filter when necessary.  
+Background color statistics are estimated from the image borders in LAB space, creating a robust model against illumination changes.  
+Foreground regions are segmented based on their color distance from this model and refined through morphological operations to remove small artifacts and fill gaps.  
+
+When more than one painting is present, the module analyzes horizontal and vertical projections of the segmentation mask to detect background gaps between artworks.  
+Each potential split is evaluated based on background ratio, gap size, and color similarity, allowing the algorithm to automatically separate and segment multiple paintings.
 
 **Example command**
 
 ```bash
-python -m src.models.seg
+python -m src.models.seg --image_folder data/raw/qsd1_w4 --output_folder results --multi_painting
 ```
 
 This command processes all images in the default dataset folder, producing:
@@ -204,7 +209,7 @@ This command processes all images in the default dataset folder, producing:
 |------------|-------------|
 | `--image_folder` | Path to the input dataset folder (default: `data/raw/qsd2_w2/`). |
 | `--output_folder` | Directory where segmented images, masks, and visualizations will be saved (default: `data/segmented/`). |
-| `--max_images` | Maximum number of images to process (optional; processes all by default). |
+| `--multi_painting` | Enables automatic detection and segmentation of multiple paintings within the same image. |
 
 Run `python -m src.models.seg --help` to see all available options.
 
