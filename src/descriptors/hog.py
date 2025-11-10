@@ -8,11 +8,11 @@ from src.descriptors.grayscale import convert_img_to_gray_scale
 def compute_hog_descriptor_from_array(
     img_bgr: np.ndarray,
     keypoint_detector: Optional[Callable] = None,
-    win_size: Tuple[int, int] = (64, 128),
+    win_size: Tuple[int, int] = (32, 32),
     block_size: Tuple[int, int] = (16, 16),
     block_stride: Tuple[int, int] = (8, 8),
-    cell_size: Tuple[int, int] = (8, 8),
-    nbins: int = 9,
+    cell_size: Tuple[int, int] = (4, 4),
+    nbins: int = 12,
     deriv_aperture: int = 1,
     win_sigma: float = -1.0,
     histogram_norm_type: int = 0,
@@ -20,7 +20,7 @@ def compute_hog_descriptor_from_array(
     gamma_correction: bool = True,
     nlevels: int = 64,
     signed_gradients: bool = False,
-    patch_size: int = 64,
+    patch_size: int = 32,
     aggregation: str = 'none',
     nfeatures: Optional[int] = None,
     **keypoint_params
