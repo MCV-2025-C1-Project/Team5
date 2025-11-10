@@ -1,8 +1,14 @@
 # Content-Based Image Retrieval
 
+## FINAL PRESENTATION
+
+[Final Presentation Slides](https://docs.google.com/presentation/d/1RUl6n7XIFrGHAFkUSAcgzTjZOMJD_jy6hzBbBIkuUtk/edit?usp=sharing)
+
+---
+
 This project implements a **query-by-example image retrieval system** designed to find paintings in the *Can Framis Museum*, *Figueres 120 years ago* and *Kode Bergen* image collection based on their **visual content**.  
 
-Developed by **Team 5** as part of the **C1 - Content Based Image Retrieval** course assignment at the *Master’s in Computer Vision (UPC-CVC)*, academic year 2025-2026.
+Developed by **Team 5** as part of the **C1 - Content Based Image Retrieval** course assignment at the *Master's in Computer Vision (UPC-CVC)*, academic year 2025-2026.
 
 
 ## Overview
