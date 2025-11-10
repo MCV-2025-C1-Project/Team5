@@ -130,7 +130,7 @@ ALL_DESCRIPTORS = [
     'sift_harris_laplacian_default',
     'hog_dog_default',
     'hog_harris_default',
-    'hog_harris_laplacian_default'
+    'hog_harris_laplacian_default',
     'daisy_dog_default',
     'daisy_harris_default',
     'daisy_harris_laplacian_default'
